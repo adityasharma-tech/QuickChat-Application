@@ -134,22 +134,22 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
     }); // Close the modal after the animation
   };
 
-  // Function to list all conversations
-  const listConversations = React.useCallback(() => {
-    try {
-      // Fetch all conversations
-      const conversations = realm.objects('Conversation');
+  // // Function to list all conversations
+  // const listConversations = React.useCallback(() => {
+  //   try {
+  //     // Fetch all conversations
+  //     const conversations = realm.objects('Conversation');
 
-      // If you want to log or return the conversation list
-      if (conversations.length > 0) {
-        return conversations; // This will return all conversations
-      } else {
-        return [];
-      }
-    } catch (error: any) {
-      console.error('Error fetching conversations:', error);
-    }
-  }, [realm]);
+  //     // If you want to log or return the conversation list
+  //     if (conversations.length > 0) {
+  //       return conversations; // This will return all conversations
+  //     } else {
+  //       return [];
+  //     }
+  //   } catch (error: any) {
+  //     console.error('Error fetching conversations:', error);
+  //   }
+  // }, [realm]);
 
   const saveTokenToDb = React.useCallback(
     async (token: string) => {
@@ -253,13 +253,34 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
     })();
   }, [writeCustomUserData, isUserDataUpdating]);
 
+
   React.useEffect(() => {
-    (() => {
-      const c = listConversations();
-      //@ts-ignore
-      setAllConversations(c);
-    })();
-  }, [setAllConversations, listConversations, rKey]);
+    const conversationCollection = realm.objects('Conversation');
+    
+    // @ts-ignore
+    setAllConversations([...conversationCollection]);
+    
+    // Listener for any changes
+    const listener = conversationCollection.addListener(() => {
+      // @ts-ignore
+      setAllConversations([...conversationCollection]);
+    });
+
+    // Clean up the listener when the component unmounts
+    return () => {
+      // @ts-ignore
+      conversationCollection.removeListener(listener);
+    };
+  }, [realm]);
+  // React.useEffect(() => {
+  //   (() => {
+  //     setChatLoading(true)
+  //     const c = listConversations();
+  //     //@ts-ignore
+  //     setAllConversations(c);
+  //     setChatLoading(false)
+  //   })();
+  // }, [rKey]);
 
   return (
     <View
