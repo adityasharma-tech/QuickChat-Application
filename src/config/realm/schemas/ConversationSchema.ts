@@ -28,7 +28,7 @@ export class MessageSchema extends Realm.Object<MessageSchema> {
   };
 }
 
-export class ConversationSchema extends Realm.Object<ConversationSchema> {
+export class ConversationSchema  extends Realm.Object<ConversationSchema> {
   _id!: BSON.ObjectId;
   participants!: string[];
   messages!: Realm.List<MessageSchema>;

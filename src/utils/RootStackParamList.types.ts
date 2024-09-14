@@ -1,5 +1,5 @@
-type RootStackParamList = {
+export type RootStackParamList = {
     Home: undefined;
-    Chat: { displayName: string, phoneNumber: string };
+    Chat: { _id?: string; displayName: string; phoneNumber: string; };
     Contact: undefined;
   };
