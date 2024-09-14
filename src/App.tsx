@@ -8,21 +8,22 @@
 import React from 'react';
 import { BSON } from 'realm'
 import { refreshKey } from './config/redux/slices/appSlice';
+import messaging from '@react-native-firebase/messaging';
+import {RootStackParamList} from './utils/RootStackParamList.types';
+import { PermissionsAndroid } from 'react-native';
+
 // navigation
 import {NavigationContainer} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 // screens
 import HomeScreen from './screens/HomeScreen';
-import {RootStackParamList} from './utils/RootStackParamList.types';
-import { PermissionsAndroid } from 'react-native';
-import messaging from '@react-native-firebase/messaging';
+import ContactScreen from './screens/ContactScreen';
 
 // hooks import
 import { useRealm, useUser } from '@realm/react'
 import { addMessageToConversation, checkConversationWithSenderId, createNewConversation } from './config/realm/realm';
 import { useAppDispatch } from './config/redux/hooks';
-import ViewScreen from './screens/ViewScreen';
 
 export default function App() {
   // hooks
@@ -90,7 +91,8 @@ export default function App() {
           headerShown: false,
         }}>
         <React.Fragment>
-          <RootStack.Screen name="Home" component={ViewScreen} />
+          <RootStack.Screen name="Home" component={HomeScreen} />
+          <RootStack.Screen name="Contact" component={ContactScreen} />
         </React.Fragment>
       </RootStack.Navigator>
     </NavigationContainer>

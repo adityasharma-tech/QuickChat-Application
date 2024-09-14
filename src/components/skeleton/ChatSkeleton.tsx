@@ -2,11 +2,13 @@ import { ScrollView, View} from 'react-native';
 import {IconButton, Text} from 'react-native-paper';
 import {Skeleton} from '@rneui/themed';
 
-export default function ChatSkeleton() {
+export default function ChatSkeleton({headerShown = true}: {
+  headerShown?: boolean;
+}) {
   return (
     <ScrollView>
       {/* Chat Section */}
-      <View
+      {headerShown && <View
         style={{
           flexDirection: 'column',
           justifyContent: 'center',
@@ -34,7 +36,7 @@ export default function ChatSkeleton() {
             icon="dots-horizontal"
           />
         </View>
-      </View>
+      </View>}
       {Array.from({length: 5}).map((c, idx) => (
         <View
           style={{
