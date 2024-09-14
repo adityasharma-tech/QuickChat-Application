@@ -1,52 +1,80 @@
-import React, {useCallback} from 'react';
-import {ImageBackground, StatusBar, Text, View} from 'react-native';
-import {Button, TextInput, useTheme} from 'react-native-paper';
+import React, {useCallback, useRef} from 'react';
 import {
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
+  Animated,
+  Dimensions,
+  Image,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import {
+  Button,
+  IconButton,
+  MD2Colors,
+  MD3Colors,
+  MD3LightTheme,
+  Text,
+  TextInput,
+  useTheme,
+} from 'react-native-paper';
+import OTPInput from '../components/OTPInput';
+import {colors} from '../utils/colors';
 import {useAuth} from '@realm/react';
-
 import {OTPWidget} from '@msg91comm/sendotp-react-native';
-import {parseMobileNumber, savePhoneNumber} from '../utils/phoneNumberUtils';
-import { parsePhoneNumber } from 'libphonenumber-js';
+import {parsePhoneNumber} from 'libphonenumber-js';
+import Toast from 'react-native-toast-message';
+import {savePhoneNumber} from '../utils/phoneNumberUtils';
 
+// constants & envs
+const {width} = Dimensions.get('window');
 const widgetId = process.env.MSG91_WIDGET_ID;
 const tokenAuth = process.env.MSG91_TOKEN_AUTH;
 
-export default function Auth() {
-  const intent = useSafeAreaInsets();
+// custom types
+interface MSG91ResponseT {
+  message: string;
+  type: string;
+}
+
+export default function ViewScreen() {
+  // hooks
   const theme = useTheme();
   const {logInWithFunction, result: authResult} = useAuth();
 
-  const [response, setResponse] = React.useState<{
-    message: string;
-    type: string;
-  } | null>(null);
+  const newTheme = {
+    ...theme,
+    colors: {
+      primary: '#000',
+    },
+  };
 
-  const [phoneNumber, setTextPhoneNumber] = React.useState<string>('+911231231231');
-  const [otpValue, setOtpValue] = React.useState<string>('');
-  const [loading, setLoading] = React.useState<boolean>(false);
-
-  // Initializing msg91 widget
+  // useEffects
   React.useEffect(() => {
-    OTPWidget.initializeWidget(widgetId!, tokenAuth!); //Widget initialization
-  }, []);
+    OTPWidget.initializeWidget(widgetId!, tokenAuth!);
+  }, []); // OTPWidget initialization
 
-  // sending otp to the users mobile number using MSG91
-  const handleOtpSend = useCallback(async () => {
+  // use state hooks
+  const [phoneNumberText, setPhoneNumberText] = React.useState<string>('');
+  const [otpInputText, setOtpInputText] = React.useState<string>('');
+  const [isOtpSendSuccess, setIsOtpSendSuccess] =
+    React.useState<boolean>(false);
+  const [loading, setLoading] = React.useState<boolean>(false);
+  const [msg91Response, setMSG91Response] = React.useState<MSG91ResponseT>();
+
+  // Animation value
+  const slideAnim = useRef(new Animated.Value(0)).current;
+
+  // Handle phone input continue function
+  const handlePhoneInputContinue = useCallback(async () => {
     setLoading(true);
-    console.log(phoneNumber)
     try {
-      const identifier = parsePhoneNumber(phoneNumber, 'IN');
-      setTextPhoneNumber(identifier!.number.replace('+', ''));
+      const identifier = parsePhoneNumber(phoneNumberText, 'IN');
       const data = {
         identifier: identifier!.number.replace('+', ''),
       };
       const result = await OTPWidget.sendOTP(data);
-      console.log('result', result)
+      console.log('@handlePhoneInputContinue.result:', result);
 
-      if (result['type'] == 'error') {
+      if (result['type'] == 'error' || result.error) {
         setLoading(false);
         Toast.show({
           type: 'error',
@@ -54,38 +82,49 @@ export default function Auth() {
           text2: result?.message,
           position: 'bottom',
         });
-        return
+        return;
       }
-      setResponse(result);
-      console.log('@handleOtpSend.result: ', result, response);
+
+      setMSG91Response(result);
     } catch (error: any) {
-      console.log(error);
+      console.error('Error occured in sending OTP:', error);
+      setLoading(false);
+      return;
     } finally {
       setLoading(false);
     }
+    // now start the animation
+    setIsOtpSendSuccess(true);
+    Animated.timing(slideAnim, {
+      toValue: -width, // Move the phone input off-screen
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
   }, [
+    setIsOtpSendSuccess,
+    Animated,
+    width,
+    slideAnim,
     setLoading,
-    parseMobileNumber,
-    phoneNumber,
-    setTextPhoneNumber,
-    OTPWidget.sendOTP,
-    Toast.show,
+    parsePhoneNumber,
+    phoneNumberText,
+    setPhoneNumberText,
+    OTPWidget,
+    Toast,
+    setMSG91Response,
   ]);
 
-  // handle verification
-  const handleVerify = useCallback(async () => {
-    console.log('@handleVerify');
+  const handleLogin = useCallback(async () => {
     setLoading(true);
     const body = {
-      reqId: response?.message,
-      otp: otpValue,
+      reqId: msg91Response?.message,
+      otp: otpInputText,
     };
     const res = await OTPWidget.verifyOTP(body);
-    console.log('@handleVerify.result: ', res);
 
     if (res['type'] != 'success') {
       setLoading(false);
-      console.warn('Failed to ');
+      console.warn('Failed to verify otp;');
       Toast.show({
         type: 'error',
         text1: 'Failed to verify otp.',
@@ -95,13 +134,11 @@ export default function Auth() {
       return;
     }
 
-    await savePhoneNumber({ phoneNumber });
+    const id = parsePhoneNumber(phoneNumberText, 'IN');
+    if (!id) return;
 
-    logInWithFunction({phoneNumber, data: {
-      phoneNumber,
-      name: "Aditya Sharma",
-      profilePicture: "https://avatar.iran.liara.run/username?id="+phoneNumber
-    }})
+    await savePhoneNumber({phoneNumber: id.number.replace('+', '')});
+    logInWithFunction({phoneNumber: id.number.replace('+', '')});
 
     Toast.show({
       type: 'success',
@@ -109,147 +146,269 @@ export default function Auth() {
       position: 'bottom',
     });
     setLoading(false);
-  }, [setLoading, phoneNumber, setTextPhoneNumber, OTPWidget, otpValue, Toast.show,]);
-
-  const handleSubmit = useCallback(async () => {
-    if (phoneNumber.trim() == '') {
-      Toast.show({
-        type: 'success',
-        text1: 'Invalid input',
-        text2: 'Please enter your phone number.',
-        position: 'bottom',
-      });
-      console.warn("Invalid Phone Number")
-      return;
-    }
-    console.log(response);
-    if (response !== null) {
-      console.log('@handleSubmit:', ' @handleVerify');
-      await handleVerify();
-    } else {
-      console.log('@handleSubmit:', ' @handleOtpSend');
-      await handleOtpSend();
-    }
-  }, [Toast, phoneNumber, response, handleOtpSend, handleVerify]);
+  }, [
+    setLoading,
+    msg91Response,
+    otpInputText,
+    OTPWidget,
+    Toast,
+    parsePhoneNumber,
+    savePhoneNumber,
+    phoneNumberText,
+    logInWithFunction,
+  ]);
 
   return (
-    <React.Fragment>
+    <View
+      style={{
+        width: '100%',
+        height: '100%',
+        position: 'relative',
+        backgroundColor: 'white',
+      }}>
+      {/* Topbar */}
       <View
         style={{
-          height: '100%',
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          paddingHorizontal: 10,
+          paddingVertical: 10,
         }}>
-        <StatusBar animated={true} barStyle="light-content" />
-        <ImageBackground
-          source={require('../assets/images/login_image_background.png')}
+        <IconButton
           style={{
-            paddingHorizontal: 20,
-            paddingTop: 80 + intent.top,
-            paddingVertical: 50,
-            flexDirection: 'column',
-            rowGap: 10,
-          }}>
-          <Text
-            style={{
-              color: '#fff',
-              fontWeight: 500,
-              fontSize: 40,
-              lineHeight: 45,
-              fontFamily: 'DMSans-Medium',
-            }}>
-            {'Sign in to your \nAccount'}
-          </Text>
-          <Text
-            style={{
-              color: '#fff',
-              fontSize: 16,
-              fontFamily: 'DMSans-ExtraLight',
-            }}>
-            QuickChat Authentication
-          </Text>
-        </ImageBackground>
+            borderWidth: 1,
+            borderColor: MD3Colors.neutral80,
+          }}
+          size={30}
+          icon="chevron-left"
+        />
+        <IconButton
+          style={{
+            borderWidth: 1,
+            borderColor: MD3Colors.neutral80,
+          }}
+          size={30}
+          icon="dots-horizontal"
+        />
+      </View>
+      <Animated.View
+        style={[
+          {flexDirection: 'row', width: '200%'},
+          {
+            transform: [{translateX: slideAnim}],
+          },
+        ]}>
         <View
           style={{
-            paddingVertical: 35,
-            paddingHorizontal: 20,
-            backgroundColor: 'white',
-            height: '100%',
+            width: width,
           }}>
+          {/* headings */}
           <View
             style={{
-              flexDirection: 'column',
-              rowGap: 25,
+              justifyContent: 'center',
+              rowGap: 10,
+              paddingVertical: 20,
             }}>
-            <TextInput
-              disabled={response != null || loading}
-              mode="outlined"
-              label="Phone Number"
-              spellCheck={false}
-              value={phoneNumber}
-              onChangeText={(text)=>setTextPhoneNumber(text)}
-              outlineColor="#d9d9d9"
-              inputMode="numeric"
-              activeOutlineColor={theme.colors.primary}
-              outlineStyle={{
-                borderRadius: 8,
-                elevation: 0,
-                shadowOpacity: 0,
-              }}
-              style={{
-                backgroundColor: '#ffffff',
-              }}
-            />
-            <TextInput
-              disabled={!response || loading}
-              mode="outlined"
-              label="Otp here"
-              inputMode="tel"
-              // secureTextEntry
-              spellCheck={false}
-              outlineColor="#d9d9d9"
-              value={otpValue}
-              onChangeText={text => setOtpValue(text)}
-              maxLength={6}
-              activeOutlineColor={theme.colors.primary}
-              outlineStyle={{
-                borderRadius: 8,
-                elevation: 0,
-                shadowOpacity: 0,
-              }}
-              style={{
-                backgroundColor: '#ffffff',
-              }}
-            />
             <Text
               style={{
-                textAlign: 'right',
-                fontWeight: '500',
-                color: theme.colors.primary,
+                textAlign: 'center',
+                fontSize: 28,
+                fontWeight: 'semibold',
               }}>
-              Resend Otp?
+              Let's join with us
             </Text>
-
-            <Button
-              onPress={handleSubmit}
-              mode="contained"
-              loading={loading||authResult.pending}
-              buttonColor={theme.colors.primaryContainer}
-              textColor="#000"
-              labelStyle={{
-                fontSize: 16,
-                fontWeight: '600',
-                fontFamily: 'DMSans-Medium',
-              }}
-              contentStyle={{
-                paddingVertical: 4,
-              }}
+            <Text
               style={{
-                borderRadius: 10,
+                textAlign: 'center',
+                fontSize: 16,
+                color: MD2Colors.grey600,
+              }}
+              numberOfLines={2}>
+              {'Enter your phone number/social\naccount to get started'}
+            </Text>
+          </View>
+
+          {/* Phone number enter */}
+
+          <View
+            style={{
+              paddingHorizontal: 20,
+            }}>
+            <View
+              style={{
+                paddingVertical: 15,
               }}>
-              {response ? 'Verify' : 'Get Otp'}
-            </Button>
+              <Text
+                style={{
+                  fontWeight: 'bold',
+                  fontSize: 16,
+                }}>
+                Phone number
+              </Text>
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                columnGap: 5,
+              }}>
+              <View
+                style={{
+                  borderWidth: 1,
+                  backgroundColor: 'white',
+                  borderRadius: 50,
+                  borderColor: MD2Colors.grey600,
+                  paddingHorizontal: 10,
+                  flexDirection: 'row',
+                  paddingRight: 15,
+                }}>
+                <Image
+                  style={{
+                    width: 40,
+                    height: 20,
+                    objectFit: 'contain',
+                    alignSelf: 'center',
+                  }}
+                  source={require('../assets/images/india_flag.png')}
+                />
+                <Text
+                  style={{
+                    alignSelf: 'center',
+                    fontWeight: 'bold',
+                  }}>
+                  +91
+                </Text>
+              </View>
+              <View
+                style={{
+                  flex: 1,
+                }}>
+                <TextInput
+                  disabled={isOtpSendSuccess || loading}
+                  onChangeText={text => {
+                    const cleaned = text.replace(/\D/g, '');
+                    const formatted = cleaned.match(/.{1,5}/g)?.join(' ') || '';
+                    setPhoneNumberText(formatted);
+                  }}
+                  onSubmitEditing={handlePhoneInputContinue}
+                  returnKeyType="next"
+                  returnKeyLabel="continue"
+                  inputMode="numeric"
+                  placeholder="8123 3456 6789"
+                  placeholderTextColor={MD2Colors.grey400}
+                  style={{
+                    backgroundColor: 'white',
+                  }}
+                  value={phoneNumberText}
+                  activeOutlineColor={colors.secondary}
+                  maxLength={11}
+                  theme={newTheme}
+                  outlineStyle={{
+                    borderRadius: 50,
+                  }}
+                  mode="outlined"
+                />
+              </View>
+            </View>
           </View>
         </View>
+
+        {/* Otp Input View */}
+        <View
+          style={{
+            width: width,
+          }}>
+          {/* headings */}
+          <View
+            style={{
+              justifyContent: 'center',
+              paddingVertical: 20,
+            }}>
+            <Text
+              style={{
+                textAlign: 'center',
+                fontSize: 28,
+                fontWeight: 'semibold',
+                marginVertical: 15,
+              }}>
+              Enter OTP code
+            </Text>
+            <Text
+              style={{
+                textAlign: 'center',
+                fontSize: 16,
+                color: MD2Colors.grey600,
+              }}
+              numberOfLines={2}>
+              {`Enter the 6-digit code sent to +91 ${phoneNumberText}.`}
+            </Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'center',
+              }}>
+              <Text
+                style={{
+                  textAlign: 'center',
+                  fontSize: 16,
+                  color: MD2Colors.grey600,
+                }}
+                numberOfLines={2}>
+                {`Didn't get a code?  `}
+              </Text>
+              <TouchableOpacity activeOpacity={0.8}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 'bold',
+                  }}>
+                  Resend OTP
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          {/* OTP Input Text */}
+          <OTPInput onCodeFilled={setOtpInputText} />
+        </View>
+      </Animated.View>
+
+      <View
+        style={{
+          marginTop: 'auto',
+          paddingHorizontal: 20,
+          paddingVertical: 20,
+        }}>
+        {isOtpSendSuccess ? (
+          <Button
+            loading={loading}
+            disabled={otpInputText.trim().length != 6}
+            onPress={handleLogin}
+            style={{
+              borderRadius: 50,
+            }}
+            contentStyle={{
+              height: 50,
+            }}
+            theme={newTheme}
+            mode="contained">
+            Verify
+          </Button>
+        ) : (
+          <Button
+            loading={loading}
+            disabled={!(phoneNumberText.trim().length == 11)}
+            onPress={handlePhoneInputContinue}
+            style={{
+              borderRadius: 50,
+            }}
+            contentStyle={{
+              height: 50,
+            }}
+            theme={newTheme}
+            mode="contained">
+            {`Continue`}
+          </Button>
+        )}
       </View>
-    </React.Fragment>
+    </View>
   );
 }
