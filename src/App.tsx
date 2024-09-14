@@ -24,6 +24,7 @@ import ContactScreen from './screens/ContactScreen';
 import { useRealm, useUser } from '@realm/react'
 import { addMessageToConversation, checkConversationWithSenderId, createNewConversation } from './config/realm/realm';
 import { useAppDispatch } from './config/redux/hooks';
+import ChatScreen from './screens/ChatScreen';
 
 export default function App() {
   // hooks
@@ -93,6 +94,7 @@ export default function App() {
         <React.Fragment>
           <RootStack.Screen name="Home" component={HomeScreen} />
           <RootStack.Screen name="Contact" component={ContactScreen} />
+          <RootStack.Screen name="Chat" component={ChatScreen} />
         </React.Fragment>
       </RootStack.Navigator>
     </NavigationContainer>

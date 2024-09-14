@@ -685,6 +685,13 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
           </View>
           {allConversations.map((c, idx) => (
             <TouchableOpacity
+            onPress={()=>{
+              navigation.navigate('Chat', {
+                displayName: c.participants[1],
+                phoneNumber: c.participants[1],
+                _id: c._id.toString()
+              })
+            }}
               activeOpacity={0.8}
               style={{
                 paddingHorizontal: 20,
