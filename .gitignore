@@ -72,3 +72,11 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+
+# Env
+.env
+
+# Config Files
+**/google-services.json
+*.config.json
