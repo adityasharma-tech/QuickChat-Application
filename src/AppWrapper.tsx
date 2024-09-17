@@ -4,18 +4,21 @@ import Auth from './components/Auth';
 import Loading from './components/Loading';
 
 // providers
-import { Provider } from 'react-redux';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { AppProvider, RealmProvider, UserProvider } from '@realm/react';
-import { MD3LightTheme, PaperProvider } from 'react-native-paper';
+import {Provider} from 'react-redux';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {AppProvider, RealmProvider, UserProvider} from '@realm/react';
+import {MD3LightTheme, PaperProvider} from 'react-native-paper';
 
 //schemas
-import { ConversationSchema, MessageSchema } from './config/realm/schemas/ConversationSchema';
-import { UserSchema } from './config/realm/schemas/UserSchema';
-import { requestUserPermission } from './utils/firebaseUtils';
+import {
+  ConversationSchema,
+  MessageSchema,
+} from './config/realm/schemas/ConversationSchema';
+import {UserSchema} from './config/realm/schemas/UserSchema';
+import {requestUserPermission} from './utils/firebaseUtils';
 
 // configs
-import { store } from './config/redux/store';
+import {store} from './config/redux/store';
 import {appId, baseUrl} from './config/atlas.config.json';
 
 export default function AppWrapper() {
@@ -27,6 +30,8 @@ export default function AppWrapper() {
       <AppProvider id={appId} baseUrl={baseUrl}>
         <UserProvider fallback={Auth}>
           <RealmProvider
+            path="default.realm"
+            // @ts-ignore
             schema={[MessageSchema, UserSchema, ConversationSchema]}
             fallback={Loading}>
             <Provider store={store}>

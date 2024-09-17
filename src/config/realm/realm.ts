@@ -74,7 +74,7 @@ export async function addMessageToConversation(
           timestamp: new Date(),
         });
         //@ts-ignore
-        conversation?.messages?.push(newMessage); // Add the new message to the conversation
+        conversation?.messages?.push(newMessage);
         console.log('Message added to conversation:', newMessage);
       } else {
         console.error('Conversation not found');

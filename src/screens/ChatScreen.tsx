@@ -4,7 +4,6 @@ import {IconButton, MD2Colors, TextInput} from 'react-native-paper';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../utils/RootStackParamList.types';
 import {useRealm, useUser} from '@realm/react';
-import {useAppDispatch, useAppSelector} from '../config/redux/hooks';
 import {BSON} from 'realm';
 import api from '../utils/api';
 import {
@@ -12,19 +11,16 @@ import {
   checkConversationWithSenderId,
   createNewConversation,
 } from '../config/realm/realm';
-import {refreshKey} from '../config/redux/slices/appSlice';
-import { MyMessageText, UserMessageText } from '../components/MessageText';
+import {MyMessageText, UserMessageText} from '../components/MessageText';
 
 type ChatScreenProp = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 
 export default function ChatScreen({route, navigation}: ChatScreenProp) {
   const user = useUser();
   const realm = useRealm();
-  const dispatch = useAppDispatch();
 
   const scrollViewRef = useRef<ScrollView>(null);
 
-  const {rKey} = useAppSelector(state => state.app);
   const [message, setMessage] = React.useState('');
   const [messageList, updateMessageList] = React.useState<
     {
@@ -35,6 +31,7 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
       timestamp: Date;
     }[]
   >([]);
+  const [loading, setLoading] = React.useState(false);
 
   const getUserFcm = useMemo(async () => {
     const userCollection = user
@@ -52,7 +49,9 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
   const createMessage = useCallback(async () => {
     if (message.trim() == '') {
       Alert.alert('message is empty');
+      return;
     }
+    setLoading(true);
     try {
       const token = await getUserFcm;
       console.log('@token', token);
@@ -98,48 +97,50 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
       } else {
         Alert.alert('Failed to send message');
       }
-      dispatch(refreshKey());
     } catch (error: any) {
       console.error(error);
+    } finally {
+      setLoading(false);
     }
-  }, [getUserFcm, message, setMessage, route.params, api]);
+  }, [getUserFcm, message, setMessage, route.params, api, setLoading]);
 
-  const listConversationsForUser = useCallback(
-    (participantId: string) => {
-      try {
-        // Fetch conversations that include the participant's ID
-        const conversations = realm
-          .objects('Conversation')
-          .filtered('participants CONTAINS $0', participantId);
+  const updateListenerCallback = useCallback(() => {
+    const currentConversation = realm
+      .objects('Conversation')
+      .filtered('participants CONTAINS $0', route.params.phoneNumber);
 
-        if (conversations.length > 0) {
-          return conversations; // Return conversations for the user
-        } else {
-          return [];
-        }
-      } catch (error: any) {
-        console.error('Error fetching conversations for user:', error);
-      }
-    },
-    [realm],
-  );
+    if (currentConversation.length > 0) {
+      // @ts-ignore
+      updateMessageList([...currentConversation[0].messages]);
+    }
+  }, [realm, Array, updateMessageList]);
 
   React.useEffect(() => {
-    (() => {
-      const allC = listConversationsForUser(route.params.phoneNumber);
-      //@ts-ignore
-      if (allC?.length > 0 && allC[0].messages) {
-        //@ts-ignore
-        updateMessageList(allC[0].messages);
-      }
-    })();
-  }, [listConversationsForUser, updateMessageList, rKey]);
+    const conversation = realm
+      .objects('Conversation')
+      .filtered('participants CONTAINS $0', route.params.phoneNumber);
+
+    if (conversation.length > 0) {
+      // @ts-ignore
+      updateMessageList([...conversation[0].messages]);
+    }
+
+    conversation.addListener(updateListenerCallback);
+
+    return () => {
+      conversation.removeListener(updateListenerCallback);
+    };
+  }, []);
 
   // Back Handler
   React.useEffect(() => {
     const backAction = () => {
-      navigation.popToTop();
-      return true;
+      if (messageList.length > 0) {
+        navigation.popToTop();
+        return true;
+      } else {
+        return false;
+      }
     };
     const backHandler = BackHandler.addEventListener(
       'hardwareBackPress',
@@ -231,15 +232,27 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
           }
           ref={scrollViewRef}
           style={{
-            padding: 10,
-            paddingBottom: 20,
-            marginBottom: 10,
+            position: 'absolute',
+            bottom: 80,
+            top: 0,
+            left: 0,
+            right: 0,
+            // backgroundColor: 'black',
+            paddingHorizontal: 10,
           }}>
           {messageList.map((props, index) =>
             props.senderId == user.customData.phoneNumber ? (
-              <MyMessageText key={props._id.toString()} _id={props._id.toString()} messageText={props.messageText}/>
+              <MyMessageText
+                key={props._id.toString()}
+                _id={props._id.toString()}
+                messageText={props.messageText}
+              />
             ) : (
-              <UserMessageText key={props._id.toString()} _id={props._id.toString()} messageText={props.messageText}/>
+              <UserMessageText
+                key={props._id.toString()}
+                _id={props._id.toString()}
+                messageText={props.messageText}
+              />
             ),
           )}
         </ScrollView>
@@ -247,6 +260,10 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
       {/* Bottom Chat */}
       <View
         style={{
+          bottom: 0,
+          left: 0,
+          right: 0,
+          position: 'absolute',
           flexDirection: 'row',
           justifyContent: 'space-between',
           paddingHorizontal: 10,
@@ -265,7 +282,9 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
             mode="outlined"
             onSubmitEditing={createMessage}
             blurOnSubmit={false}
+            autoFocus={true}
             returnKeyType="send"
+            onFocus={() => scrollViewRef.current?.scrollToEnd({animated: true})}
             value={message}
             onChangeText={setMessage}
             placeholder="Type message..."
@@ -288,6 +307,7 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
           />
         </View>
         <IconButton
+          loading={loading}
           onPress={createMessage}
           size={30}
           icon={message.length <= 0 ? 'microphone-outline' : 'send'}

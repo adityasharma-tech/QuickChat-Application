@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useCallback} from 'react';
 
 import {
   Animated,
@@ -38,10 +38,9 @@ import {useNavigation} from '@react-navigation/native';
 
 // firebase
 import messaging from '@react-native-firebase/messaging';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../utils/RootStackParamList.types';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-
+import {StackNavigationProp} from '@react-navigation/stack';
+import {RootStackParamList} from '../utils/RootStackParamList.types';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
 
 // types
 interface ConversationT {
@@ -63,11 +62,12 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
   const {logOut} = useAuth();
   const user = useUser();
   const realm = useRealm();
-  const {rKey} = useAppSelector(state => state.app);
 
   // use state hooks
   const [activeTab, setActiveTab] = React.useState<TabNameE>(TabNameE.ALL);
-  const [allConversations, setAllConversations] = React.useState<ConversationT[]>([]);
+  const [allConversations, setAllConversations] = React.useState<
+    ConversationT[]
+  >([]);
   const [userDataUpdating, isUserDataUpdating] = React.useState<boolean>(true);
   const [chatLoading, setChatLoading] = React.useState<boolean>(false);
   const [statusLoading, setStatusLoading] = React.useState<boolean>(false);
@@ -95,7 +95,6 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
   const buttonOpacity = React.useRef(new Animated.Value(0)).current;
 
   const handleNewChatPopupOpen = () => {
-    // navigation.navigate('Splash'); return;
     setVisible(true);
 
     Animated.parallel([
@@ -127,29 +126,29 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
       }),
     ]).start(() => {
       setVisible(false);
+    }); // Close the modal after the animation
+  };
+
+  const handleNavigationChange = () => {
+    Animated.parallel([
+      Animated.timing(popupScale, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setVisible(false);
       InteractionManager.runAfterInteractions(() => {
         //@ts-ignore
         navigation.navigate('Contact');
       });
-    }); // Close the modal after the animation
+    });
   };
-
-  // // Function to list all conversations
-  // const listConversations = React.useCallback(() => {
-  //   try {
-  //     // Fetch all conversations
-  //     const conversations = realm.objects('Conversation');
-
-  //     // If you want to log or return the conversation list
-  //     if (conversations.length > 0) {
-  //       return conversations; // This will return all conversations
-  //     } else {
-  //       return [];
-  //     }
-  //   } catch (error: any) {
-  //     console.error('Error fetching conversations:', error);
-  //   }
-  // }, [realm]);
 
   const saveTokenToDb = React.useCallback(
     async (token: string) => {
@@ -222,6 +221,36 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
     }
   }, [user, getPhoneNumber, logOut]);
 
+  const updateConversationListListener = useCallback(() => {
+    const conversationCollection = realm.objects('Conversation');
+
+    // @ts-ignore
+    setAllConversations([...conversationCollection]);
+  }, []);
+
+  const deleteAllRealmData = useCallback(() => {
+    try {
+      realm.write(() => {
+        realm.deleteAll(); // Delete all Realm data
+      });
+      console.log('All Realm data has been deleted.');
+    } catch (error) {
+      console.error('Error while deleting Realm data:', error);
+    }
+  }, [realm]);
+
+  const logoutUser = useCallback(async () => {
+    try {
+      if (user) {
+        deleteAllRealmData()
+        await logOut();
+        console.log('User logged out successfully.');
+      }
+    } catch (error) {
+      console.error('Error logging out user:', error);
+    }
+  }, [user]);
+
   React.useEffect(() => {
     // Get the device token
     messaging()
@@ -253,34 +282,20 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
     })();
   }, [writeCustomUserData, isUserDataUpdating]);
 
-
   React.useEffect(() => {
     const conversationCollection = realm.objects('Conversation');
-    
+
     // @ts-ignore
     setAllConversations([...conversationCollection]);
-    
+
     // Listener for any changes
-    const listener = conversationCollection.addListener(() => {
-      // @ts-ignore
-      setAllConversations([...conversationCollection]);
-    });
+    conversationCollection.addListener(updateConversationListListener);
 
     // Clean up the listener when the component unmounts
     return () => {
-      // @ts-ignore
-      conversationCollection.removeListener(listener);
+      conversationCollection.removeListener(updateConversationListListener);
     };
   }, [realm]);
-  // React.useEffect(() => {
-  //   (() => {
-  //     setChatLoading(true)
-  //     const c = listConversations();
-  //     //@ts-ignore
-  //     setAllConversations(c);
-  //     setChatLoading(false)
-  //   })();
-  // }, [rKey]);
 
   return (
     <View
@@ -343,9 +358,7 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
                   flex: 1,
                 }}
                 key={idx}
-                onPress={() => {
-                  handleNewChatPopupClose();
-                }}>
+                onPress={handleNavigationChange}>
                 {idx != 0 ? <Divider /> : null}
                 <View
                   style={{
@@ -706,13 +719,13 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
           </View>
           {allConversations.map((c, idx) => (
             <TouchableOpacity
-            onPress={()=>{
-              navigation.navigate('Chat', {
-                displayName: c.participants[1],
-                phoneNumber: c.participants[1],
-                _id: c._id.toString()
-              })
-            }}
+              onPress={() => {
+                navigation.navigate('Chat', {
+                  displayName: c.participants[1],
+                  phoneNumber: c.participants[1],
+                  _id: c._id.toString(),
+                });
+              }}
               activeOpacity={0.8}
               style={{
                 paddingHorizontal: 20,

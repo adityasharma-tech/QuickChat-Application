@@ -8,12 +8,12 @@
 import React from 'react';
 import { BSON } from 'realm'
 import { refreshKey } from './config/redux/slices/appSlice';
-import messaging from '@react-native-firebase/messaging';
+import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import {RootStackParamList} from './utils/RootStackParamList.types';
 import { PermissionsAndroid } from 'react-native';
 
 // navigation
-import {NavigationContainer} from '@react-navigation/native';
+import {NavigationContainer, NavigationContainerRef} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 // screens
@@ -43,7 +43,6 @@ export default function App() {
   // handling messages
   React.useEffect(() => {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
-      // Alert.alert('A new FCM message arrived!', JSON.stringify(remoteMessage));
       try {
         realm.write(() => {
           checkConversationWithSenderId(
@@ -83,9 +82,32 @@ export default function App() {
     return unsubscribe;
   }, []);
 
+  let navigationRef = React.useRef<NavigationContainerRef<RootStackParamList>|null>(null);
+
+
+  const navigateOnRecievingCallback = React.useCallback((remoteMessage: FirebaseMessagingTypes.RemoteMessage|null)=>{
+    if(remoteMessage){
+      // @ts-ignore
+      const { phoneNumber, displayName } = remoteMessage.data;
+
+      navigationRef.current?.navigate('Chat', { phoneNumber, displayName })
+    }
+  }, [navigationRef])
+
+  React.useEffect(() => {
+    // Handle notification when the app is opened from a quit state
+    messaging().getInitialNotification().then(navigateOnRecievingCallback);
+
+    // Handle notification when the app is in the background or foreground
+    const unsubscribe = messaging().onNotificationOpenedApp(navigateOnRecievingCallback);
+
+    return unsubscribe;
+  }, [messaging]);
+
+
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <RootStack.Navigator
         initialRouteName="Home"
         screenOptions={{
