@@ -10,6 +10,7 @@ import {
   StyleSheet,
   View,
   InteractionManager,
+  FlatList,
 } from 'react-native';
 import {
   Button,
@@ -41,6 +42,7 @@ import messaging from '@react-native-firebase/messaging';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../utils/RootStackParamList.types';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import ConversationItem from '../components/ConversationItem';
 
 // types
 interface ConversationT {
@@ -242,7 +244,7 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
   const logoutUser = useCallback(async () => {
     try {
       if (user) {
-        deleteAllRealmData()
+        deleteAllRealmData();
         await logOut();
         console.log('User logged out successfully.');
       }
@@ -717,107 +719,36 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
               />
             </View>
           </View>
-          {allConversations.map((c, idx) => (
-            <TouchableOpacity
-              onPress={() => {
-                navigation.navigate('Chat', {
-                  displayName: c.participants[1],
-                  phoneNumber: c.participants[1],
-                  _id: c._id.toString(),
-                });
-              }}
-              activeOpacity={0.8}
-              style={{
-                paddingHorizontal: 20,
-                paddingVertical: 10,
-                justifyContent: 'center',
-              }}
-              key={idx}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                }}>
-                <Image
-                  style={{
-                    width: 60,
-                    height: 60,
-                    borderRadius: 50,
-                  }}
-                  source={{
-                    uri: 'https://i.pravatar.cc/70?u=' + c._id.toString(),
-                  }}
-                />
-                <View
-                  style={{
-                    flex: 1,
-                    paddingHorizontal: 10,
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                  }}>
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      fontWeight: 'bold',
-                    }}>
-                    {c.participants[1]}
-                  </Text>
-                  <Text
-                    style={{
-                      color: true ? MD3Colors.neutral50 : 'black',
-                      fontWeight: true ? '500' : 'semibold',
-                    }}
-                    numberOfLines={1}
-                    ellipsizeMode="tail">
-                    {
-                      allConversations[idx].messages[
-                        allConversations[idx].messages.length - 1
-                      ].messageText
-                    }
-                  </Text>
-                </View>
-                <View
-                  style={{
-                    width: 50,
-                    flexDirection: 'column',
-                    justifyContent: 'space-around',
-                  }}>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      textAlign: 'right',
-                      color: MD3Colors.neutral60,
-                    }}>
-                    {allConversations[idx].messages[
-                      allConversations[idx].messages.length - 1
-                    ].timestamp.toLocaleTimeString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: false, // Ensures 24-hour format
-                    })}
-                  </Text>
-                  {/* {c.unviewedChats == 0 ? null : (
-                      <Text
-                        style={{
-                          fontSize: 10,
-                          color: 'black',
-                          fontWeight: 'bold',
-                          backgroundColor: '#FDC604',
-                          width: 20,
-                          height: 20,
-                          textAlign: 'center',
-                          textAlignVertical: 'center',
-                          borderRadius: 50,
-                          marginLeft: 'auto',
-                          marginRight: 5,
-                          marginBottom: 10,
-                        }}>
-                        {c.unviewedChats}
-                      </Text>
-                    )} */}
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
+          <FlatList
+            data={allConversations}
+            keyExtractor={item=>item._id.toString()}
+            renderItem={({item, index}) => (
+              <ConversationItem
+                onPress={() =>
+                  navigation.navigate('Chat', {
+                    displayName: item.participants[1],
+                    phoneNumber: item.participants[1],
+                    _id: item._id.toString(),
+                  })
+                }
+                _id={item._id.toString()}
+                lastMessage={
+                  allConversations[index].messages[
+                    allConversations[index].messages.length - 1
+                  ].messageText
+                }
+                time={allConversations[index].messages[
+                  allConversations[index].messages.length - 1
+                ].timestamp.toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false, // Ensures 24-hour format
+                })}
+                idx={index}
+                phoneNumber={item.participants[1]}
+              />
+            )}
+          />
         </ScrollView>
       ) : null}
       <View

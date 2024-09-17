@@ -1,11 +1,19 @@
-import {View, Text, Image, ScrollView, Alert, BackHandler} from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  ScrollView,
+  Alert,
+  BackHandler,
+  FlatList,
+} from 'react-native';
 import React, {useCallback, useMemo, useRef} from 'react';
 import {IconButton, MD2Colors, TextInput} from 'react-native-paper';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../utils/RootStackParamList.types';
 import {useRealm, useUser} from '@realm/react';
 import {BSON} from 'realm';
-import api from '../utils/api';
+import {apiRequest} from '../utils/api';
 import {
   addMessageToConversation,
   checkConversationWithSenderId,
@@ -55,16 +63,20 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
     try {
       const token = await getUserFcm;
       console.log('@token', token);
-      const response = await api.post('/message', {
-        fcm_token: token,
-        content: {
-          message,
-          phoneNumber: user?.customData?.phoneNumber,
-          type: 'text',
+      const response = await apiRequest(
+        '/message',
+        {
+          fcm_token: token,
+          content: {
+            message,
+            phoneNumber: user?.customData?.phoneNumber,
+            type: 'text',
+          },
         },
-      });
+        'POST',
+      );
       console.log('This is response from the server: ', response);
-      if (response.data) {
+      if (response) {
         setMessage('');
         realm.write(() => {
           checkConversationWithSenderId(
@@ -102,7 +114,7 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
     } finally {
       setLoading(false);
     }
-  }, [getUserFcm, message, setMessage, route.params, api, setLoading]);
+  }, [getUserFcm, message, setMessage, route.params, apiRequest, setLoading]);
 
   const updateListenerCallback = useCallback(() => {
     const currentConversation = realm
@@ -230,6 +242,7 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
           onContentSizeChange={() =>
             scrollViewRef.current?.scrollToEnd({animated: true})
           }
+          scrollsToTop={false}
           ref={scrollViewRef}
           style={{
             position: 'absolute',
@@ -240,21 +253,25 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
             // backgroundColor: 'black',
             paddingHorizontal: 10,
           }}>
-          {messageList.map((props, index) =>
-            props.senderId == user.customData.phoneNumber ? (
-              <MyMessageText
-                key={props._id.toString()}
-                _id={props._id.toString()}
-                messageText={props.messageText}
-              />
-            ) : (
-              <UserMessageText
-                key={props._id.toString()}
-                _id={props._id.toString()}
-                messageText={props.messageText}
-              />
-            ),
-          )}
+          <FlatList
+            data={messageList}
+            keyExtractor={item => item._id.toString()}
+            renderItem={({item}) =>
+              item.senderId == user.customData.phoneNumber ? (
+                <MyMessageText
+                  key={item._id.toString()}
+                  _id={item._id.toString()}
+                  messageText={item.messageText}
+                />
+              ) : (
+                <UserMessageText
+                  key={item._id.toString()}
+                  _id={item._id.toString()}
+                  messageText={item.messageText}
+                />
+              )
+            }
+          />
         </ScrollView>
       </View>
       {/* Bottom Chat */}
