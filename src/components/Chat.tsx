@@ -1,5 +1,5 @@
 import {Image, TouchableOpacity, View} from 'react-native';
-import {DefaultChatT} from '../lib/constants';
+import {DefaultChatT} from '../utils/constants';
 import {MD3Colors, Text} from 'react-native-paper';
 
 export default function ChatComponent(props: DefaultChatT): React.JSX.Element {

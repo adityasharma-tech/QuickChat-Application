@@ -1,5 +1,5 @@
 import {TouchableOpacity, View} from 'react-native';
-import {DefaultContactT} from '../lib/constants';
+import {DefaultContactT} from '../utils/constants';
 import {MD3Colors, Text} from 'react-native-paper';
 
 export default function ContactComponent(
