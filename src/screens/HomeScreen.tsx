@@ -66,7 +66,6 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
   const realm = useRealm();
 
   // use state hooks
-  const [activeTab, setActiveTab] = React.useState<TabNameE>(TabNameE.ALL);
   const [allConversations, setAllConversations] = React.useState<
     ConversationT[]
   >([]);

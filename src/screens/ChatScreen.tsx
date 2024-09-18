@@ -13,7 +13,7 @@ import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../utils/RootStackParamList.types';
 import {useRealm, useUser} from '@realm/react';
 import {BSON} from 'realm';
-import {apiRequest} from '../utils/api';
+import {apiRequest} from '../utils/apiClient';
 import {
   addMessageToConversation,
   checkConversationWithSenderId,

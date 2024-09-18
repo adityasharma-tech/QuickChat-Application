@@ -11,7 +11,6 @@ import {
   IconButton,
   MD2Colors,
   MD3Colors,
-  MD3LightTheme,
   Text,
   TextInput,
   useTheme,
@@ -23,6 +22,7 @@ import {OTPWidget} from '@msg91comm/sendotp-react-native';
 import {parsePhoneNumber} from 'libphonenumber-js';
 import Toast from 'react-native-toast-message';
 import {savePhoneNumber} from '../utils/phoneNumberUtils';
+import {apiRequest} from '../utils/apiClient';
 
 // constants & envs
 const {width} = Dimensions.get('window');
@@ -38,7 +38,7 @@ interface MSG91ResponseT {
 export default function ViewScreen() {
   // hooks
   const theme = useTheme();
-  const {logInWithFunction, result: authResult} = useAuth();
+  const {logInWithJWT, result: authResult} = useAuth();
 
   const newTheme = {
     ...theme,
@@ -114,38 +114,86 @@ export default function ViewScreen() {
     setMSG91Response,
   ]);
 
-  const handleLogin = useCallback(async () => {
+  const handleResendOtp = useCallback(async () => {
     setLoading(true);
-    const body = {
-      reqId: msg91Response?.message,
-      otp: otpInputText,
-    };
-    const res = await OTPWidget.verifyOTP(body);
+    try {
+      const data = {
+        reqId: msg91Response?.message,
+        retryChannel: 11,
+      };
+      const result = await OTPWidget.retryOTP(data);
+      console.log('@handleResendOtp.result:', result);
 
-    if (res['type'] != 'success') {
+      if (result['type'] == 'error' || result.error) {
+        setLoading(false);
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to resend otp.',
+          text2: result?.message,
+          position: 'bottom',
+        });
+        return;
+      }
+
+      setMSG91Response(result);
+    } catch (error: any) {
+      console.error('Error occured in sending OTP:', error);
+    } finally {
       setLoading(false);
-      console.warn('Failed to verify otp;');
+    }
+  }, [setLoading, OTPWidget, Toast, msg91Response, setMSG91Response]);
+
+  const handleLogin = useCallback(async () => {
+    try {
+      setLoading(true);
+      const body = {
+        reqId: msg91Response?.message,
+        otp: otpInputText,
+      };
+      const msgRes = await OTPWidget.verifyOTP(body);
+
+      if (msgRes['type'] != 'success') {
+        setLoading(false);
+        console.warn('Failed to verify otp;');
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to verify otp.',
+          text2: msgRes?.message,
+          position: 'bottom',
+        });
+        return;
+      }
+      const response = await apiRequest(
+        '/user/authenticate',
+        {
+          verification_token: msgRes.message,
+        },
+        'POST',
+      );
+      if (!response.success) {
+        console.log('Failed to verify otp: ', response);
+        return;
+      }
+      const parsedPhoneNumber = parsePhoneNumber(phoneNumberText, 'IN');
+      if (!parsedPhoneNumber) return;
+
+      await savePhoneNumber({
+        phoneNumber: parsedPhoneNumber.number.replace('+', ''),
+      });
+      console.log('response', response);
+
+      logInWithJWT(response.data.access_token)
+
+      console.log(authResult);
       Toast.show({
-        type: 'error',
-        text1: 'Failed to verify otp.',
-        text2: res?.message,
+        type: 'success',
+        text1: 'You are logined successfully',
         position: 'bottom',
       });
-      return;
+      setLoading(false);
+    } catch (error) {
+      console.error(error);
     }
-
-    const id = parsePhoneNumber(phoneNumberText, 'IN');
-    if (!id) return;
-
-    await savePhoneNumber({phoneNumber: id.number.replace('+', '')});
-    logInWithFunction({phoneNumber: id.number.replace('+', '')});
-
-    Toast.show({
-      type: 'success',
-      text1: 'You are logined successfully',
-      position: 'bottom',
-    });
-    setLoading(false);
   }, [
     setLoading,
     msg91Response,
@@ -155,7 +203,8 @@ export default function ViewScreen() {
     parsePhoneNumber,
     savePhoneNumber,
     phoneNumberText,
-    logInWithFunction,
+    logInWithJWT,
+    apiRequest,
   ]);
 
   return (
@@ -355,7 +404,7 @@ export default function ViewScreen() {
                 numberOfLines={2}>
                 {`Didn't get a code?  `}
               </Text>
-              <TouchableOpacity activeOpacity={0.8}>
+              <TouchableOpacity onPress={handleResendOtp} activeOpacity={0.8}>
                 <Text
                   style={{
                     fontSize: 16,
