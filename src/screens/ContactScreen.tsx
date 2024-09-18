@@ -1,6 +1,7 @@
 import React, {useCallback} from 'react';
 
 import {
+  FlatList,
   Image,
   PermissionsAndroid,
   ScrollView,
@@ -293,16 +294,16 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
         <ScrollView>
           {/* Contact Section */}
           {searchQuery.length <= 0
-            ? allContacts.map((c, idx) => (
-                <TouchableOpacity
-                  onPress={() => handleNavigation(c.phoneNumber, c.contactName)}
+            ? <FlatList data={allContacts} renderItem={({item, index})=>(
+              <TouchableOpacity
+                  onPress={() => handleNavigation(item.phoneNumber, item.contactName)}
                   activeOpacity={0.8}
                   style={{
                     paddingHorizontal: 20,
                     paddingVertical: 10,
                     justifyContent: 'center',
                   }}
-                  key={idx}>
+                  key={index}>
                   <View
                     style={{
                       flexDirection: 'row',
@@ -327,7 +328,7 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
                           fontSize: 16,
                           fontWeight: 'bold',
                         }}>
-                        {c.contactName}
+                        {item.contactName}
                       </Text>
                       <Text
                         style={{
@@ -336,7 +337,7 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
                         }}
                         numberOfLines={1}
                         ellipsizeMode="tail">
-                        {c.phoneNumber}
+                        {item.phoneNumber}
                       </Text>
                     </View>
                     <View
@@ -356,7 +357,7 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
                     </View>
                   </View>
                 </TouchableOpacity>
-              ))
+            )}/>
             : null}
           {searchQuery.length > 0 &&
             filteredContacts.map((c, idx) => (
