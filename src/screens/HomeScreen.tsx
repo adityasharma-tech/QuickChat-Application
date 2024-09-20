@@ -7,7 +7,6 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   View,
   InteractionManager,
   FlatList,
@@ -20,7 +19,6 @@ import {
   MD3Colors,
   Text,
 } from 'react-native-paper';
-import {BSON} from 'realm';
 import {getPhoneNumber} from '../utils/phoneNumberUtils';
 
 // constants
@@ -34,24 +32,21 @@ import {BlurView} from '@react-native-community/blur';
 
 // hook importsd
 import {useAuth, useRealm, useUser} from '@realm/react';
-import {useAppSelector} from '../config/redux/hooks';
-import {useNavigation} from '@react-navigation/native';
 
 // firebase
 import messaging from '@react-native-firebase/messaging';
-import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../utils/RootStackParamList.types';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import ConversationItem from '../components/ConversationItem';
 import ProfilePopup from '../components/ProfilePopup';
 import {usePopup} from '../config/custom-providers/ProfileProvider';
-import {useSocket} from '../config/socket.io/socket';
+import mongoose from 'mongoose';
 
 // types
 interface ConversationT {
-  _id: BSON.ObjectId;
+  _id: mongoose.Types.ObjectId;
   messages: {
-    _id: BSON.ObjectId;
+    _id: mongoose.Types.ObjectId;
     senderId: string;
     receiverId: string;
     messageText: string;

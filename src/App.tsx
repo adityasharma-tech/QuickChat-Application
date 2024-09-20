@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { BSON } from 'realm'
+import mongoose from 'mongoose';
 import { refreshKey } from './config/redux/slices/appSlice';
 import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import {RootStackParamList} from './utils/RootStackParamList.types';
@@ -54,7 +54,7 @@ export default function App() {
               if (cid) {
                 addMessageToConversation(
                   realm,
-                  new BSON.ObjectId(cid),
+                  new mongoose.Types.ObjectId(cid),
                   `${remoteMessage?.data?.phoneNumber}`,
                   `${user.customData?.phoneNumber}`,
                   `${remoteMessage?.data?.message}`,

@@ -12,7 +12,6 @@ import {IconButton, MD2Colors, TextInput} from 'react-native-paper';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../utils/RootStackParamList.types';
 import {useRealm, useUser} from '@realm/react';
-import {BSON} from 'realm';
 import {apiRequest} from '../utils/apiClient';
 import {
   addMessageToConversation,
@@ -21,6 +20,7 @@ import {
 } from '../config/realm/realm';
 import {MyMessageText, UserMessageText} from '../components/MessageText';
 import {useSocket} from '../config/socket.io/socket';
+import mongoose from 'mongoose';
 
 type ChatScreenProp = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 
@@ -34,7 +34,7 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
   const [message, setMessage] = React.useState('');
   const [messageList, updateMessageList] = React.useState<
     {
-      _id: BSON.ObjectId;
+      _id: mongoose.Types.ObjectId;
       senderId: string;
       receiverId: string;
       messageText: string;
@@ -90,7 +90,7 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
               if (cid) {
                 addMessageToConversation(
                   realm,
-                  new BSON.ObjectId(cid),
+                  new mongoose.Types.ObjectId(cid),
                   `${user.customData?.phoneNumber}`, // senderId
                   `${route.params.phoneNumber}`, // receiverId
                   message,
@@ -168,15 +168,17 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
 
   const createMessage = useCallback(()=>{
     if(!socket) return console.error("Socket not found.");
-    // socket.emit("message:create", {
-    //   message_id,
-    //   message_mode,
-    //   reply_id,
-    //   fcm_token,
-    //   message,
-    //   caption,
-    //   metadata: { avatar_url, phone_number, display_name },
-    // })
+    socket.emit("message:create", {
+      message_id: new mongoose.Types.ObjectId(),
+      message_mode: "text",
+      reply_id: "",
+      fcm_token: user.customData.fcm_token,
+      message,
+      caption: "",
+      metadata: { avatar_url: `https://i.pravatar.cc/150?u=${route.params.phoneNumber}`, phone_number: route.params.phoneNumber, display_name: route.params.displayName },
+    }, (response: any)=>{
+      console.log("Response from socket.io-message:create->", response);
+    })
   }, [])
 
   return (

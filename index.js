@@ -8,7 +8,8 @@ import AppWrapper from './src/AppWrapper';
 
 // imports
 import messaging from '@react-native-firebase/messaging';
-import Realm, {BSON} from 'realm';
+import Realm from 'realm';
+import mongoose from 'mongoose'
 import {
   ConversationSchema,
   MessageSchema,
@@ -43,7 +44,7 @@ messaging().setBackgroundMessageHandler(async remoteMessage => {
           const cid = conversation[0]._id;
           console.log('@cid', cid);
           if (!cid) return;
-          addMessageToConversation(realm, new BSON.ObjectID(cid), remoteMessage.data.phoneNumber,  phoneNumber, remoteMessage.data.message);
+          addMessageToConversation(realm, new mongoose.Types.ObjectId(cid), remoteMessage.data.phoneNumber,  phoneNumber, remoteMessage.data.message);
         } else {
           createNewConversation(
             realm,

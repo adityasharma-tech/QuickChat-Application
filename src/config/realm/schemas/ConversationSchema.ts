@@ -1,5 +1,5 @@
+import mongoose from 'mongoose';
 import Realm from 'realm';
-import {BSON} from 'realm'
 
 const MessageStatusT = {
   Received: 'received',
@@ -9,7 +9,7 @@ const MessageStatusT = {
 type MessageStatusT = (typeof MessageStatusT)[keyof typeof MessageStatusT];
 
 export class MessageSchema extends Realm.Object<MessageSchema> {
-  _id!: BSON.ObjectId;
+  _id!: mongoose.Types.ObjectId;
   senderId!: string;
   receiverId!: string;
   messageText!: string;
@@ -29,7 +29,7 @@ export class MessageSchema extends Realm.Object<MessageSchema> {
 }
 
 export class ConversationSchema  extends Realm.Object<ConversationSchema> {
-  _id!: BSON.ObjectId;
+  _id!: mongoose.Types.ObjectId;
   participants!: string[];
   messages!: Realm.List<MessageSchema>;
 

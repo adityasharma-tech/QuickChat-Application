@@ -1,7 +1,7 @@
+import mongoose from "mongoose";
 import Realm from "realm";
-import {BSON} from 'realm'
 export class UserSchema extends Realm.Object<UserSchema> {
-    _id!: BSON.ObjectId;  // Adjusted to use _id as the primary key
+    _id!: mongoose.Types.ObjectId;  // Adjusted to use _id as the primary key
     phoneNumber!: string;
     lastSeen!: Date;
   

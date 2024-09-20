@@ -1,6 +1,5 @@
 import { GestureResponderEvent } from "react-native";
-import { colors } from "./colors";
-import { BSON } from "realm";
+import mongoose from "mongoose";
 
 export interface DefaultChatT {
   id: string;
@@ -275,21 +274,21 @@ export const profileStoryList: ProfileStatusListT[] = [
   {
     backgroundImage: 'https://picsum.photos/200/300?uid=1',
     label: 'Cakep banget ini taneman, cocok bgt',
-    id: (new BSON.ObjectId()).toString()
+    id: (new mongoose.Types.ObjectId()).toString()
   },
   {
     backgroundImage: 'https://picsum.photos/200/300?uid=2',
     label: 'Kursi aja berdua, kamu masa sendiri',
-    id: (new BSON.ObjectId()).toString()
+    id: (new mongoose.Types.ObjectId()).toString()
   },
   {
     backgroundImage: 'https://picsum.photos/200/300?uid=3',
     label: 'Ngopi dulul, lorem ipsum, sebelum',
-    id: (new BSON.ObjectId()).toString()
+    id: (new mongoose.Types.ObjectId()).toString()
   },
   {
     backgroundImage: 'https://picsum.photos/200/300?uid=4',
     label: 'Cakep banget ini taneman, cocok bgt',
-    id: (new BSON.ObjectId()).toString()
+    id: (new mongoose.Types.ObjectId()).toString()
   }
 ]

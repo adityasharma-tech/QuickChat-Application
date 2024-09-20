@@ -1,4 +1,4 @@
-import {BSON} from 'realm'
+import mongoose from 'mongoose';
 import Realm from 'realm';
 
 export async function checkConversationWithSenderId(realm: Realm, senderId: string) {
@@ -23,18 +23,18 @@ export async function createNewConversation(
   participants: string[],
   message=""
 ) {
-  console.log("asd fasdf slkdf a", (new BSON.ObjectId()).toString())
+  console.log("asd fasdf slkdf a", (new mongoose.Types.ObjectId()).toString())
   try {
     realm.write(() => {
         const newMessage = realm.create('Message', {
-            _id: new BSON.ObjectId(),
+            _id: new mongoose.Types.ObjectId(),
             senderId: participants[0],
             receiverId: participants[1],
             messageText: message,
             timestamp: new Date(),
           });
       realm.create('Conversation', {
-        _id: new BSON.ObjectId(),
+        _id: new mongoose.Types.ObjectId(),
         participants: participants,
         messages: [newMessage], // Empty list initially, can add messages later
       });
@@ -46,7 +46,7 @@ export async function createNewConversation(
 
 export async function addMessageToConversation(
   realm: Realm,
-  conversationId: BSON.ObjectId,
+  conversationId: mongoose.Types.ObjectId,
   senderId: string,
   receiverId: string,
   messageText: string,
@@ -58,7 +58,7 @@ export async function addMessageToConversation(
         conversationId,
       );
       console.log("@@@@@@@@@@@@@@@@@",{
-        _id: new BSON.ObjectId(),
+        _id: new mongoose.Types.ObjectId(),
         senderId,
         receiverId,
         messageText,
@@ -67,7 +67,7 @@ export async function addMessageToConversation(
 
       if (conversation) {
         const newMessage = realm.create('Message', {
-          _id: new BSON.ObjectId(),
+          _id: new mongoose.Types.ObjectId(),
           senderId,
           receiverId,
           messageText,
