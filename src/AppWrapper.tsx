@@ -20,6 +20,8 @@ import {requestUserPermission} from './utils/firebaseUtils';
 // configs
 import {store} from './config/redux/store';
 import {appId, baseUrl} from './config/atlas.config.json';
+import {PopupProvider} from './config/custom-providers/ProfileProvider';
+import {SocketProvider} from './config/socket.io/socket';
 
 export default function AppWrapper() {
   React.useEffect(() => {
@@ -46,7 +48,11 @@ export default function AppWrapper() {
                     onPrimaryContainer: '#5F9A4A',
                   },
                 }}>
-                <App />
+                <SocketProvider>
+                  <PopupProvider>
+                    <App />
+                  </PopupProvider>
+                </SocketProvider>
               </PaperProvider>
             </Provider>
           </RealmProvider>

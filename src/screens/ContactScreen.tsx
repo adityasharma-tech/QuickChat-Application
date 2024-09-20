@@ -5,10 +5,12 @@ import {
   Image,
   PermissionsAndroid,
   ScrollView,
+  StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
 import {
+  ActivityIndicator,
   Button,
   IconButton,
   MD2Colors,
@@ -27,6 +29,7 @@ import {useUser} from '@realm/react';
 import {parsePhoneNumber} from 'libphonenumber-js';
 import {removeDuplicatePhoneNumbers} from '../utils/phoneNumberUtils';
 import {Dialog} from '@rneui/base';
+import { colors } from '../utils/colors';
 
 interface ContactT {
   contactName: string;
@@ -45,13 +48,14 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
     [],
   );
   const [loading, setLoading] = React.useState<boolean>(true);
+  const [navigationLoading, setNavigationLoading] = React.useState(false);
   const [dialogVisible, setDialogVisible] = React.useState<boolean>(false);
   const [searchQuery, setSearchQuery] = React.useState<string>('');
 
   // handling functions
   const handleNavigation = useCallback(
     async (phoneNumber: string, name: string) => {
-      setLoading(true);
+      setNavigationLoading(true);
       try {
         const result: any = await user.functions.checkUserExists({
           phoneNumber: phoneNumber.replace('+', ''),
@@ -70,7 +74,7 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
         setDialogVisible(true);
         console.error(error);
       } finally {
-        setLoading(false);
+        setNavigationLoading(false);
       }
     },
     [setLoading, user, navigation, setDialogVisible],
@@ -162,26 +166,49 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
         height: '100%',
         position: 'relative',
       }}>
+        {
+          navigationLoading ? <View style={[
+            StyleSheet.absoluteFill,
+            {
+              backgroundColor: "#00000080",
+              zIndex: 5,
+              justifyContent: 'center',
+              flexDirection: 'column'
+            }
+          ]}>
+            <View>
+              <ActivityIndicator size={50} color={colors.primary}/>
+            </View>
+          </View> : null
+        }
       <Dialog
         overlayStyle={{
           backgroundColor: 'white',
           borderRadius: 30,
           paddingVertical: 30,
         }}
-        
         isVisible={dialogVisible}
         onBackdropPress={() => setDialogVisible(!dialogVisible)}>
-        <Dialog.Title titleStyle={{
-            color: 'black'
-        }} title="User not found" />
+        <Dialog.Title
+          titleStyle={{
+            color: 'black',
+          }}
+          title="User not found"
+        />
         <Text>User is not on QuickChat</Text>
-        <View style={{
+        <View
+          style={{
             flexDirection: 'row',
-            justifyContent: 'flex-end'
-        }}>
-            <Button mode='outlined' labelStyle={{
-                color: '#000'
-            }} onPress={()=>setDialogVisible(false)}>Close</Button>
+            justifyContent: 'flex-end',
+          }}>
+          <Button
+            mode="outlined"
+            labelStyle={{
+              color: '#000',
+            }}
+            onPress={() => setDialogVisible(false)}>
+            Close
+          </Button>
         </View>
       </Dialog>
       <View
@@ -293,10 +320,14 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
       ) : allContacts.length > 0 ? (
         <ScrollView>
           {/* Contact Section */}
-          {searchQuery.length <= 0
-            ? <FlatList data={allContacts} renderItem={({item, index})=>(
-              <TouchableOpacity
-                  onPress={() => handleNavigation(item.phoneNumber, item.contactName)}
+          {searchQuery.length <= 0 ? (
+            <FlatList
+              data={allContacts}
+              renderItem={({item, index}) => (
+                <TouchableOpacity
+                  onPress={() =>
+                    handleNavigation(item.phoneNumber, item.contactName)
+                  }
                   activeOpacity={0.8}
                   style={{
                     paddingHorizontal: 20,
@@ -357,73 +388,78 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
                     </View>
                   </View>
                 </TouchableOpacity>
-            )}/>
-            : null}
-          {searchQuery.length > 0 &&
-            filteredContacts.map((c, idx) => (
-              <TouchableOpacity
-                onPress={() => handleNavigation(c.phoneNumber, c.contactName)}
-                activeOpacity={0.8}
-                style={{
-                  paddingHorizontal: 20,
-                  paddingVertical: 10,
-                  justifyContent: 'center',
-                }}
-                key={idx}>
-                <View
+              )}
+            />
+          ) : null}
+          {searchQuery.length > 0 && (
+            <FlatList
+              data={filteredContacts}
+              renderItem={({item: c, index: idx}) => (
+                <TouchableOpacity
+                  onPress={() => handleNavigation(c.phoneNumber, c.contactName)}
+                  activeOpacity={0.8}
                   style={{
-                    flexDirection: 'row',
-                  }}>
-                  <Image
-                    style={{
-                      width: 60,
-                      height: 60,
-                      borderRadius: 50,
-                    }}
-                    source={require('../assets/images/user.png')}
-                  />
+                    paddingHorizontal: 20,
+                    paddingVertical: 10,
+                    justifyContent: 'center',
+                  }}
+                  key={idx}>
                   <View
                     style={{
-                      flex: 1,
-                      paddingHorizontal: 10,
-                      flexDirection: 'column',
-                      justifyContent: 'center',
+                      flexDirection: 'row',
                     }}>
-                    <Text
+                    <Image
                       style={{
-                        fontSize: 16,
-                        fontWeight: 'bold',
-                      }}>
-                      {c.contactName}
-                    </Text>
-                    <Text
-                      style={{
-                        color: MD2Colors.grey800,
-                        fontWeight: 'semibold',
+                        width: 60,
+                        height: 60,
+                        borderRadius: 50,
                       }}
-                      numberOfLines={1}
-                      ellipsizeMode="tail">
-                      {c.phoneNumber}
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      width: 50,
-                      flexDirection: 'column',
-                      justifyContent: 'space-around',
-                    }}>
-                    <Text
+                      source={require('../assets/images/user.png')}
+                    />
+                    <View
                       style={{
-                        fontSize: 12,
-                        textAlign: 'right',
-                        color: MD3Colors.neutral60,
+                        flex: 1,
+                        paddingHorizontal: 10,
+                        flexDirection: 'column',
+                        justifyContent: 'center',
                       }}>
-                      Phone
-                    </Text>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 'bold',
+                        }}>
+                        {c.contactName}
+                      </Text>
+                      <Text
+                        style={{
+                          color: MD2Colors.grey800,
+                          fontWeight: 'semibold',
+                        }}
+                        numberOfLines={1}
+                        ellipsizeMode="tail">
+                        {c.phoneNumber}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        width: 50,
+                        flexDirection: 'column',
+                        justifyContent: 'space-around',
+                      }}>
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          textAlign: 'right',
+                          color: MD3Colors.neutral60,
+                        }}>
+                        Phone
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              </TouchableOpacity>
-            ))}
+                </TouchableOpacity>
+              )}
+            />
+          )}
         </ScrollView>
       ) : null}
     </View>

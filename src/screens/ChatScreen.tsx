@@ -20,12 +20,14 @@ import {
   createNewConversation,
 } from '../config/realm/realm';
 import {MyMessageText, UserMessageText} from '../components/MessageText';
+import {useSocket} from '../config/socket.io/socket';
 
 type ChatScreenProp = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 
 export default function ChatScreen({route, navigation}: ChatScreenProp) {
   const user = useUser();
   const realm = useRealm();
+  const {socket} = useSocket();
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -54,7 +56,7 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
     return rUser.fcm_token;
   }, [user, route.params]);
 
-  const createMessage = useCallback(async () => {
+  const createMessageV1 = useCallback(async () => {
     if (message.trim() == '') {
       Alert.alert('message is empty');
       return;
@@ -160,6 +162,22 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
     );
     return () => backHandler.remove();
   }, [BackHandler]);
+
+
+  // New Version Started
+
+  const createMessage = useCallback(()=>{
+    if(!socket) return console.error("Socket not found.");
+    // socket.emit("message:create", {
+    //   message_id,
+    //   message_mode,
+    //   reply_id,
+    //   fcm_token,
+    //   message,
+    //   caption,
+    //   metadata: { avatar_url, phone_number, display_name },
+    // })
+  }, [])
 
   return (
     <View

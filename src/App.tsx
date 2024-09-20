@@ -104,8 +104,6 @@ export default function App() {
     return unsubscribe;
   }, [messaging]);
 
-
-
   return (
     <NavigationContainer ref={navigationRef}>
       <RootStack.Navigator

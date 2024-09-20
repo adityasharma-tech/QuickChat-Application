@@ -43,6 +43,9 @@ import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../utils/RootStackParamList.types';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import ConversationItem from '../components/ConversationItem';
+import ProfilePopup from '../components/ProfilePopup';
+import {usePopup} from '../config/custom-providers/ProfileProvider';
+import {useSocket} from '../config/socket.io/socket';
 
 // types
 interface ConversationT {
@@ -64,6 +67,7 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
   const {logOut} = useAuth();
   const user = useUser();
   const realm = useRealm();
+  const {showPopup} = usePopup();
 
   // use state hooks
   const [allConversations, setAllConversations] = React.useState<
@@ -305,6 +309,7 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
         height: '100%',
         position: 'relative',
       }}>
+      <ProfilePopup />
       {/** Floting create chat **/}
       {visible && (
         <View
@@ -323,7 +328,7 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
               left: 0,
               right: 0,
               bottom: 0,
-              opacity: 0.5
+              opacity: 0.5,
             }}
             blurType="dark"
             blurAmount={2}
@@ -715,7 +720,7 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
           </View>
           <FlatList
             data={allConversations}
-            keyExtractor={item=>item._id.toString()}
+            keyExtractor={item => item._id.toString()}
             renderItem={({item, index}) => (
               <ConversationItem
                 onPress={() =>
@@ -789,7 +794,7 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
             marginHorizontal: 0,
             width: 100,
           }}
-          onPress={() => {}}
+          onPress={showPopup}
           icon="account-outline"
         />
       </View>
