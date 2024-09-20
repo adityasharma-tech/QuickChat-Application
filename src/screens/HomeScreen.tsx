@@ -316,12 +316,6 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
             bottom: 0,
             zIndex: 10,
           }}>
-          <View
-            style={{
-              ...StyleSheet.absoluteFillObject,
-              backgroundColor: 'rgba(0, 0, 0, 0.3)', // Black with 30% opacity
-            }}
-          />
           <BlurView
             style={{
               position: 'absolute',
@@ -329,9 +323,10 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
               left: 0,
               right: 0,
               bottom: 0,
+              opacity: 0.5
             }}
-            blurType="light"
-            blurAmount={1}
+            blurType="dark"
+            blurAmount={2}
           />
           <Animated.View
             style={[

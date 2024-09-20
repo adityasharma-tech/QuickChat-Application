@@ -2,6 +2,7 @@ import React, {useCallback, useRef} from 'react';
 import {
   Animated,
   Dimensions,
+  GestureResponderEvent,
   Image,
   TouchableOpacity,
   View,
@@ -35,7 +36,11 @@ interface MSG91ResponseT {
   type: string;
 }
 
-export default function ViewScreen() {
+export default function AuthComponent({
+  onBack
+}: {
+  onBack: ((event: GestureResponderEvent) => void) & ((e: GestureResponderEvent) => void) & ((e: GestureResponderEvent) => void)
+}) {
   // hooks
   const theme = useTheme();
   const {logInWithJWT, result: authResult} = useAuth();
@@ -224,6 +229,7 @@ export default function ViewScreen() {
           paddingVertical: 10,
         }}>
         <IconButton
+        onPress={onBack}
           style={{
             borderWidth: 1,
             borderColor: MD3Colors.neutral80,

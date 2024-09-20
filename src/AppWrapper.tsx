@@ -1,6 +1,6 @@
 import React from 'react';
 import App from './App';
-import Auth from './components/Auth';
+import Auth from './components/Authentication';
 import Loading from './components/Loading';
 
 // providers
