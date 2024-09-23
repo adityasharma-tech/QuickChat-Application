@@ -24,11 +24,15 @@ import {parsePhoneNumber} from 'libphonenumber-js';
 import Toast from 'react-native-toast-message';
 import {savePhoneNumber} from '../utils/phoneNumberUtils';
 import {apiRequest} from '../utils/apiClient';
+import { storeUserSession } from '../utils/userSessions';
+import { envs } from '../utils/constants';
 
 // constants & envs
 const {width} = Dimensions.get('window');
-const widgetId = process.env.MSG91_WIDGET_ID;
-const tokenAuth = process.env.MSG91_TOKEN_AUTH;
+
+const widgetId = envs.widget_id;
+
+const tokenAuth = envs.widget_auth_token;
 
 // custom types
 interface MSG91ResponseT {
@@ -37,12 +41,13 @@ interface MSG91ResponseT {
 }
 
 export default function AuthComponent({
-  onBack
+  onBack,
 }: {
   onBack: ((event: GestureResponderEvent) => void) & ((e: GestureResponderEvent) => void) & ((e: GestureResponderEvent) => void)
 }) {
   // hooks
   const theme = useTheme();
+
   const {logInWithJWT, result: authResult} = useAuth();
 
   const newTheme = {
@@ -59,10 +64,14 @@ export default function AuthComponent({
 
   // use state hooks
   const [phoneNumberText, setPhoneNumberText] = React.useState<string>('');
+
   const [otpInputText, setOtpInputText] = React.useState<string>('');
+
   const [isOtpSendSuccess, setIsOtpSendSuccess] =
     React.useState<boolean>(false);
+
   const [loading, setLoading] = React.useState<boolean>(false);
+
   const [msg91Response, setMSG91Response] = React.useState<MSG91ResponseT>();
 
   // Animation value
@@ -73,13 +82,15 @@ export default function AuthComponent({
     setLoading(true);
     try {
       const identifier = parsePhoneNumber(phoneNumberText, 'IN');
+
       const data = {
         identifier: identifier!.number.replace('+', ''),
       };
+
       const result = await OTPWidget.sendOTP(data);
       console.log('@handlePhoneInputContinue.result:', result);
 
-      if (result['type'] == 'error' || result.error) {
+      if (result.type == 'error' || result.error) {
         setLoading(false);
         Toast.show({
           type: 'error',
@@ -126,10 +137,11 @@ export default function AuthComponent({
         reqId: msg91Response?.message,
         retryChannel: 11,
       };
+
       const result = await OTPWidget.retryOTP(data);
       console.log('@handleResendOtp.result:', result);
 
-      if (result['type'] == 'error' || result.error) {
+      if (result.type == 'error' || result.error) {
         setLoading(false);
         Toast.show({
           type: 'error',
@@ -155,9 +167,10 @@ export default function AuthComponent({
         reqId: msg91Response?.message,
         otp: otpInputText,
       };
+
       const msgRes = await OTPWidget.verifyOTP(body);
 
-      if (msgRes['type'] != 'success') {
+      if (msgRes.type != 'success') {
         setLoading(false);
         console.warn('Failed to verify otp;');
         Toast.show({
@@ -180,15 +193,22 @@ export default function AuthComponent({
         return;
       }
       const parsedPhoneNumber = parsePhoneNumber(phoneNumberText, 'IN');
-      if (!parsedPhoneNumber) return;
+      if (!parsedPhoneNumber) {return;}
 
       await savePhoneNumber({
         phoneNumber: parsedPhoneNumber.number.replace('+', ''),
       });
       console.log('response', response);
 
-      logInWithJWT(response.data.access_token)
-
+      storeUserSession(response.data.access_token, parsedPhoneNumber.number.replace('+', '')).then(()=>{
+        logInWithJWT(response.data.access_token);
+      }).catch(()=>{
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to login',
+          position: 'bottom',
+        });
+      });
       console.log(authResult);
       Toast.show({
         type: 'success',
@@ -198,6 +218,7 @@ export default function AuthComponent({
       setLoading(false);
     } catch (error) {
       console.error(error);
+      setLoading(false);
     }
   }, [
     setLoading,
@@ -341,6 +362,7 @@ export default function AuthComponent({
                   disabled={isOtpSendSuccess || loading}
                   onChangeText={text => {
                     const cleaned = text.replace(/\D/g, '');
+
                     const formatted = cleaned.match(/.{1,5}/g)?.join(' ') || '';
                     setPhoneNumberText(formatted);
                   }}
@@ -408,7 +430,7 @@ export default function AuthComponent({
                   color: MD2Colors.grey600,
                 }}
                 numberOfLines={2}>
-                {`Didn't get a code?  `}
+                {'Didn\'t get a code?  '}
               </Text>
               <TouchableOpacity onPress={handleResendOtp} activeOpacity={0.8}>
                 <Text
@@ -460,7 +482,7 @@ export default function AuthComponent({
             }}
             theme={newTheme}
             mode="contained">
-            {`Continue`}
+            {'Continue'}
           </Button>
         )}
       </View>

@@ -16,6 +16,7 @@ interface OTPInputProps {
 
 const OTPInput: React.FC<OTPInputProps> = ({pinCount = 6, onCodeFilled}) => {
   const [otp, setOtp] = useState<string[]>(Array(pinCount).fill(''));
+
   const inputsRef = useRef<TextInput[]>([]);
 
   const handleTextChange = (text: string, index: number) => {

@@ -44,12 +44,17 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
 
   // useState Hooks
   const [allContacts, setAllContacts] = React.useState<ContactT[]>([]);
+
   const [filteredContacts, setFilteredContacts] = React.useState<ContactT[]>(
     [],
   );
+
   const [loading, setLoading] = React.useState<boolean>(true);
+
   const [navigationLoading, setNavigationLoading] = React.useState(false);
+
   const [dialogVisible, setDialogVisible] = React.useState<boolean>(false);
+
   const [searchQuery, setSearchQuery] = React.useState<string>('');
 
   // handling functions
@@ -60,8 +65,8 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
         const result: any = await user.functions.checkUserExists({
           phoneNumber: phoneNumber.replace('+', ''),
         });
-        if (result['exists'] === true) {
-          const myUser = result['user'];
+        if (result.exists === true) {
+          const myUser = result.user;
           navigation.navigate('Chat', {
             _id: myUser._id.toString(),
             displayName: name.trim() == '' ? myUser.name : name,
@@ -108,6 +113,7 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
             } catch (error) {
               continue;
             }
+
             if (finalNumber) {
               duplicateNumbers.push({
                 phoneNumber: finalNumber.number,
@@ -170,11 +176,11 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
           navigationLoading ? <View style={[
             StyleSheet.absoluteFill,
             {
-              backgroundColor: "#00000080",
+              backgroundColor: '#00000080',
               zIndex: 5,
               justifyContent: 'center',
-              flexDirection: 'column'
-            }
+              flexDirection: 'column',
+            },
           ]}>
             <View>
               <ActivityIndicator size={50} color={colors.primary}/>

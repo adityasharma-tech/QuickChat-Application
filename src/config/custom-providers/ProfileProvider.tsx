@@ -29,6 +29,7 @@ export const PopupProvider: React.FC<PopupProviderProps> = ({ children }) => {
   const [isVisible, setIsVisible] = useState(false);
 
   const showPopup = () => setIsVisible(true);
+
   const hidePopup = () => setIsVisible(false);
 
   return (

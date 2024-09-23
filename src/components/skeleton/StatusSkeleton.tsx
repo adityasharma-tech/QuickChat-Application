@@ -15,7 +15,7 @@ export default function StatusSkeleton() {
           rowGap: 5,
         }}>
         <Skeleton
-        animation='pulse'
+        animation="pulse"
         circle
         width={70}
         height={70}

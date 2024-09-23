@@ -16,8 +16,10 @@ import { useUser } from '@realm/react';
 
 export default function ProfilePopup() {
   const {isVisible, hidePopup} = usePopup();
+
   const popupScale = React.useRef(new Animated.Value(0)).current;
-  const user = useUser()
+
+  const user = useUser();
 
   React.useEffect(() => {
     if (isVisible) {
@@ -37,7 +39,7 @@ export default function ProfilePopup() {
     }
   }, [isVisible]);
 
-  if (!isVisible) return null;
+  if (!isVisible) {return null;}
   return (
     <View
       style={{
@@ -140,7 +142,7 @@ export default function ProfilePopup() {
             </Text>
             <Text
               style={{
-                color: 'black'
+                color: 'black',
               }}>
               Be better, be proud of yourself.
             </Text>

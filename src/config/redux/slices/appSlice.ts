@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createSlice } from '@reduxjs/toolkit';
 
 // Define a type for the slice state
 interface AppState {
@@ -8,7 +8,7 @@ interface AppState {
 // Define the initial state using that type
 const initialState: AppState = {
   rKey: 0,
-}
+};
 
 export const appSlice = createSlice({
   name: 'counter',
@@ -16,11 +16,11 @@ export const appSlice = createSlice({
   initialState,
   reducers: {
     refreshKey: (state) => {
-      state.rKey = Math.random()
+      state.rKey = Math.random();
     },
   },
-})
+});
 
-export const { refreshKey } = appSlice.actions
+export const { refreshKey } = appSlice.actions;
 
-export default appSlice.reducer
+export default appSlice.reducer;

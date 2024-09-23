@@ -1,5 +1,5 @@
-import { View, Text, Animated, TouchableOpacity } from 'react-native'
-import React from 'react'
+import { View, Text, Animated, TouchableOpacity } from 'react-native';
+import React from 'react';
 import { BlurView } from '@react-native-community/blur';
 import { Divider, IconButton, MD2Colors } from 'react-native-paper';
 import { reactIcons, specificChatReplyOptions } from '../utils/constants';
@@ -7,6 +7,7 @@ import { reactIcons, specificChatReplyOptions } from '../utils/constants';
 export default function ReactionPopup() {
   // handling new chat function
   const [visible, setVisible] = React.useState(false);
+
   const popupScale = React.useRef(new Animated.Value(0)).current;
 
   const handleNewChatPopupOpen = () => {
@@ -19,6 +20,7 @@ export default function ReactionPopup() {
       }),
     ]).start();
   };
+
   const handleNewChatPopupClose = () => {
     Animated.parallel([
       Animated.timing(popupScale, {
@@ -31,7 +33,7 @@ export default function ReactionPopup() {
     }); // Close the modal after the animation
   };
 
-  
+
     return (
       visible && (
         <View
@@ -52,7 +54,7 @@ export default function ReactionPopup() {
               right: 0,
               bottom: 0,
               zIndex: 5,
-              opacity: 0.5
+              opacity: 0.5,
             }}
             blurType="dark"
             blurAmount={2}
@@ -143,13 +145,13 @@ export default function ReactionPopup() {
                       <TouchableOpacity onPress={op.onPress} activeOpacity={0.7}>
                         <View style={{
                           flexDirection: 'row',
-                          justifyContent: 'space-between'
+                          justifyContent: 'space-between',
                         }}>
                           <Text style={{
                             color: 'black',
                             fontWeight: 'bold',
                             fontSize: 16,
-                            verticalAlign: 'middle'
+                            verticalAlign: 'middle',
                           }}>{op.optionName}</Text>
                           <IconButton icon={op.optionIcon} />
                         </View>

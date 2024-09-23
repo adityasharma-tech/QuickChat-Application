@@ -1,35 +1,35 @@
-import mongoose from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 import Realm from 'realm';
 
-const MessageStatusT = {
-  Received: 'received',
-  Seen: 'seen',
-  Deleted: 'deleted',
-} as const;
-type MessageStatusT = (typeof MessageStatusT)[keyof typeof MessageStatusT];
-
 export class MessageSchema extends Realm.Object<MessageSchema> {
-  _id!: mongoose.Types.ObjectId;
-  senderId!: string;
-  receiverId!: string;
-  messageText!: string;
+  _id!: string;
+  phoneNumber!: string;
+  messageType!: 'text' | 'media/image' | 'media/video' | 'media/audio' | 'media/doc';
+  replyId!: string;
+  message!: string;
+  caption!: string;
+  edited!: boolean;
+  seen!: boolean;
   timestamp!: Date;
 
   static schema = {
     name: 'Message',
     primaryKey: '_id',
     properties: {
-      _id: 'objectId',
-      senderId: 'string',
-      receiverId: 'string',
-      messageText: 'string',
+      _id: 'string',
+      phoneNumber: 'string',
+      messageType: 'string',
+      message: 'string',
+      caption: 'string',
+      edited: { type: 'bool', default: false },
+      seen: { type: 'bool', default: false },
       timestamp: 'date',
     },
   };
 }
 
-export class ConversationSchema  extends Realm.Object<ConversationSchema> {
-  _id!: mongoose.Types.ObjectId;
+export class ConversationSchema extends Realm.Object<ConversationSchema> {
+  _id!: string;
   participants!: string[];
   messages!: Realm.List<MessageSchema>;
 
@@ -37,9 +37,9 @@ export class ConversationSchema  extends Realm.Object<ConversationSchema> {
     name: 'Conversation',
     primaryKey: '_id',
     properties: {
-      _id: 'objectId',
-      participants: 'string[]',
-      messages: {type: 'list', objectType: 'Message'},
+      _id: 'string',
+      phoneNumber: 'string',
+      messages: { type: 'list', objectType: 'Message' },
     },
   };
 }

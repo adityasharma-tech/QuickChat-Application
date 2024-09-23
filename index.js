@@ -9,7 +9,7 @@ import AppWrapper from './src/AppWrapper';
 // imports
 import messaging from '@react-native-firebase/messaging';
 import Realm from 'realm';
-import mongoose from 'mongoose'
+import {v4 as uuidv4} from 'uuid';
 import {
   ConversationSchema,
   MessageSchema,
@@ -18,7 +18,7 @@ import {UserSchema} from './src/config/realm/schemas/UserSchema';
 import {getPhoneNumber} from './src/utils/phoneNumberUtils';
 import {
   addMessageToConversation,
-  checkConversationWithSenderId,
+  checkConversationExists,
   createNewConversation,
 } from './src/config/realm/realm';
 
@@ -35,7 +35,7 @@ messaging().setBackgroundMessageHandler(async remoteMessage => {
   try {
     const {phoneNumber} = await getPhoneNumber();
     realm.write(() => {
-      checkConversationWithSenderId(
+      checkConversationExists(
         realm,
         `${remoteMessage?.data?.phoneNumber}`,
       ).then(conversation => {
@@ -43,8 +43,8 @@ messaging().setBackgroundMessageHandler(async remoteMessage => {
           console.log('conversation', conversation);
           const cid = conversation[0]._id;
           console.log('@cid', cid);
-          if (!cid) return;
-          addMessageToConversation(realm, new mongoose.Types.ObjectId(cid), remoteMessage.data.phoneNumber,  phoneNumber, remoteMessage.data.message);
+          if (!cid) {return;}
+          addMessageToConversation(realm, uuidv4(), remoteMessage.data.phoneNumber,  phoneNumber, remoteMessage.data.message);
         } else {
           createNewConversation(
             realm,

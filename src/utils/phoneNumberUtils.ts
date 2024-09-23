@@ -11,6 +11,7 @@ export function removeDuplicatePhoneNumbers(
   contacts: DefaultContactT[],
 ): DefaultContactT[] {
   const uniqueContacts: DefaultContactT[] = [];
+
   const phoneNumbersSet: Set<string> = new Set();
 
   contacts.forEach(contact => {

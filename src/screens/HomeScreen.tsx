@@ -40,19 +40,26 @@ import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import ConversationItem from '../components/ConversationItem';
 import ProfilePopup from '../components/ProfilePopup';
 import {usePopup} from '../config/custom-providers/ProfileProvider';
-import mongoose from 'mongoose';
 
 // types
 interface ConversationT {
-  _id: mongoose.Types.ObjectId;
+  _id: string;
+  phoneNumber: string;
   messages: {
-    _id: mongoose.Types.ObjectId;
-    senderId: string;
-    receiverId: string;
-    messageText: string;
+    _id: string;
+    phoneNumber: string;
+    messageType:
+      | 'text'
+      | 'media/image'
+      | 'media/video'
+      | 'media/audio'
+      | 'media/doc';
+    replyId: string;
+    message: string;
+    caption: string;
+    edited: boolean;
     timestamp: Date;
   }[];
-  participants: string[];
 }
 
 type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
@@ -60,21 +67,29 @@ type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
 export default function ViewScreen({navigation}: HomeScreenProps) {
   // hooks
   const {logOut} = useAuth();
+
   const user = useUser();
+
   const realm = useRealm();
+
   const {showPopup} = usePopup();
 
   // use state hooks
   const [allConversations, setAllConversations] = React.useState<
     ConversationT[]
   >([]);
+
   const [userDataUpdating, isUserDataUpdating] = React.useState<boolean>(true);
+
   const [chatLoading, setChatLoading] = React.useState<boolean>(false);
+
   const [statusLoading, setStatusLoading] = React.useState<boolean>(false);
 
   // Animations
   const [inputViewExpanded, setInputViewExpanded] = React.useState(false);
+
   const widthAnim = React.useRef(new Animated.Value(0)).current;
+
   const inputRef = React.useRef<TextInput>(null);
 
   const handleSearchPress = () => {
@@ -91,7 +106,9 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
 
   // handling new chat function
   const [visible, setVisible] = React.useState(false);
+
   const popupScale = React.useRef(new Animated.Value(0)).current;
+
   const buttonOpacity = React.useRef(new Animated.Value(0)).current;
 
   const handleNewChatPopupOpen = () => {
@@ -158,8 +175,9 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
           .mongoClient('mongodb-atlas')
           .db('quickchat')
           .collection('userdata');
+
         const phoneNumber = user.customData.phoneNumber;
-        if (!phoneNumber) return;
+        if (!phoneNumber) {return;}
 
         const filter = {
           user_id: user.id,
@@ -192,8 +210,9 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
         .mongoClient('mongodb-atlas')
         .db('quickchat')
         .collection('userdata');
+
       const {phoneNumber} = await getPhoneNumber();
-      if (!phoneNumber) logOut();
+      if (!phoneNumber) {logOut();}
 
       const filter = {
         user_id: user.id,
@@ -720,8 +739,8 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
               <ConversationItem
                 onPress={() =>
                   navigation.navigate('Chat', {
-                    displayName: item.participants[1],
-                    phoneNumber: item.participants[1],
+                    displayName: item.phoneNumber,
+                    phoneNumber: item.phoneNumber,
                     _id: item._id.toString(),
                   })
                 }
@@ -729,7 +748,7 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
                 lastMessage={
                   allConversations[index].messages[
                     allConversations[index].messages.length - 1
-                  ].messageText
+                  ].message
                 }
                 time={allConversations[index].messages[
                   allConversations[index].messages.length - 1
@@ -739,7 +758,7 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
                   hour12: false, // Ensures 24-hour format
                 })}
                 idx={index}
-                phoneNumber={item.participants[1]}
+                phoneNumber={item.phoneNumber}
               />
             )}
           />

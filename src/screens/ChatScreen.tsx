@@ -11,16 +11,14 @@ import React, {useCallback, useMemo, useRef} from 'react';
 import {IconButton, MD2Colors, TextInput} from 'react-native-paper';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../utils/RootStackParamList.types';
-import {useRealm, useUser} from '@realm/react';
-import {apiRequest} from '../utils/apiClient';
-import {
-  addMessageToConversation,
-  checkConversationWithSenderId,
-  createNewConversation,
-} from '../config/realm/realm';
+import {useQuery, useRealm, useUser} from '@realm/react';
 import {MyMessageText, UserMessageText} from '../components/MessageText';
 import {useSocket} from '../config/socket.io/socket';
-import mongoose from 'mongoose';
+import {v4 as uuidv4} from 'uuid';
+import {
+  ConversationSchema,
+  MessageSchema,
+} from '../config/realm/schemas/ConversationSchema';
 
 type ChatScreenProp = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 
@@ -31,13 +29,23 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
 
   const scrollViewRef = useRef<ScrollView>(null);
 
+  const [recipientFcm, setRecipientFcm] = React.useState(null);
+
   const [message, setMessage] = React.useState('');
   const [messageList, updateMessageList] = React.useState<
     {
-      _id: mongoose.Types.ObjectId;
-      senderId: string;
-      receiverId: string;
-      messageText: string;
+      _id: string;
+      phoneNumber: string;
+      messageType:
+        | 'text'
+        | 'media/image'
+        | 'media/video'
+        | 'media/audio'
+        | 'media/doc';
+      replyId: string;
+      message: string;
+      caption: string;
+      edited: boolean;
       timestamp: Date;
     }[]
   >([]);
@@ -54,69 +62,64 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
     if (!rUser) return;
     // @ts-ignore
     return rUser.fcm_token;
-  }, [user, route.params]);
+  }, [user, route.params, recipientFcm]);
 
-  const createMessageV1 = useCallback(async () => {
-    if (message.trim() == '') {
-      Alert.alert('message is empty');
-      return;
-    }
-    setLoading(true);
-    try {
-      const token = await getUserFcm;
-      console.log('@token', token);
-      const response = await apiRequest(
-        '/message',
-        {
-          fcm_token: token,
-          content: {
-            message,
-            phoneNumber: user?.customData?.phoneNumber,
-            type: 'text',
-          },
-        },
-        'POST',
-      );
-      console.log('This is response from the server: ', response);
-      if (response) {
-        setMessage('');
+  const onRemoteMessage = useCallback(
+    (data: any) => {
+      const {
+        message_id,
+        message_mode,
+        reply_id,
+        message,
+        phone_number,
+        caption,
+        seen
+      }: any = data;
+      try {
+        const conversations = useQuery(ConversationSchema).filtered(
+          `phoneNumber == $0`,
+          phone_number,
+        );
+        const conversation = conversations.length > 0 ? conversations[0] : null;
         realm.write(() => {
-          checkConversationWithSenderId(
-            realm,
-            `${route.params.phoneNumber}`,
-          ).then((conversation: any) => {
-            if (conversation) {
-              const cid = conversation[0]._id;
-              if (cid) {
-                addMessageToConversation(
-                  realm,
-                  new mongoose.Types.ObjectId(cid),
-                  `${user.customData?.phoneNumber}`, // senderId
-                  `${route.params.phoneNumber}`, // receiverId
-                  message,
-                );
-              }
-            } else {
-              createNewConversation(
-                realm,
-                [
-                  `${user.customData?.phoneNumber}`, // senderId
-                  `${route.params.phoneNumber}`, // recieverId
-                ],
-                message,
-              );
-            }
+          const newMessage = realm.create('Message', {
+            _id: uuidv4(),
+            phoneNumber: phone_number,
+            messageType: message_mode,
+            replyId: reply_id,
+            message,
+            caption,
+            edited: false,
+            timestamp: new Date(),
           });
+          if (conversation) {
+            const messages = useQuery(MessageSchema).filtered(
+              `_id == $0`,
+              message_id,
+            );
+            const oldMessage = messages.length > 0 ? messages[0] : null;
+            if (oldMessage) {
+              oldMessage.edited = true;
+              oldMessage.seen = seen ?? false;
+              oldMessage.message = message;
+            } else {
+              // @ts-ignore
+              conversation.messages.push(newMessage);
+            }
+          } else {
+            realm.create('Conversation', {
+              _id: uuidv4(),
+              phoneNumber: phone_number,
+              messages: [newMessage],
+            });
+          }
         });
-      } else {
-        Alert.alert('Failed to send message');
+      } catch (error) {
+        console.error('Getting error during Saving RemoteMessage: ', error);
       }
-    } catch (error: any) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }, [getUserFcm, message, setMessage, route.params, apiRequest, setLoading]);
+    },
+    [useQuery, ConversationSchema, realm, uuidv4, Date],
+  );
 
   const updateListenerCallback = useCallback(() => {
     const currentConversation = realm
@@ -163,23 +166,47 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
     return () => backHandler.remove();
   }, [BackHandler]);
 
-
   // New Version Started
 
-  const createMessage = useCallback(()=>{
-    if(!socket) return console.error("Socket not found.");
-    socket.emit("message:create", {
-      message_id: new mongoose.Types.ObjectId(),
-      message_mode: "text",
-      reply_id: "",
-      fcm_token: user.customData.fcm_token,
+  const createMessage = useCallback(() => {
+    if (!socket) return console.error('Socket not found.');
+    socket.emit(
+      'message:create',
+      {
+        message_id: uuidv4(),
+        message_mode: 'text',
+        reply_id: '',
+        fcm_token: getUserFcm,
+        message,
+        caption: '',
+        metadata: {
+          avatar_url: `https://i.pravatar.cc/150?u=${user.customData.phoneNumber}`,
+          phone_number: user.customData.phoneNumber,
+          display_name: user.customData.phoneNumber,
+        },
+      },
+      (response: any) => {
+        console.log('Response from socket.io-message:create->', response);
+        onRemoteMessage({
+          message_id: uuidv4(),
+          message_mode: 'text',
+          reply_id: '',
+          message,
+          caption: '',
+          phone_number: user.customData.phoneNumber,
+          seen: true,
+        });
+      },
+    );
+    onRemoteMessage({
+      message_id: uuidv4(),
+      message_mode: 'text',
+      reply_id: '',
       message,
-      caption: "",
-      metadata: { avatar_url: `https://i.pravatar.cc/150?u=${route.params.phoneNumber}`, phone_number: route.params.phoneNumber, display_name: route.params.displayName },
-    }, (response: any)=>{
-      console.log("Response from socket.io-message:create->", response);
-    })
-  }, [])
+      caption: '',
+      phone_number: user.customData.phoneNumber,
+    });
+  }, [socket, uuidv4, user, onRemoteMessage, getUserFcm]);
 
   return (
     <View
@@ -270,24 +297,23 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
             top: 0,
             left: 0,
             right: 0,
-            // backgroundColor: 'black',
             paddingHorizontal: 10,
           }}>
           <FlatList
             data={messageList}
             keyExtractor={item => item._id.toString()}
             renderItem={({item}) =>
-              item.senderId == user.customData.phoneNumber ? (
+              item.phoneNumber == user.customData.phoneNumber ? (
                 <MyMessageText
                   key={item._id.toString()}
                   _id={item._id.toString()}
-                  messageText={item.messageText}
+                  messageText={item.message}
                 />
               ) : (
                 <UserMessageText
                   key={item._id.toString()}
                   _id={item._id.toString()}
-                  messageText={item.messageText}
+                  messageText={item.message}
                 />
               )
             }

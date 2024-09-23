@@ -1,5 +1,15 @@
-import { GestureResponderEvent } from "react-native";
-import mongoose from "mongoose";
+import { GestureResponderEvent } from 'react-native';
+import {v4 as uuidv4} from 'uuid';
+
+export const envs : {
+    server_url: string;
+    widget_id: string;
+    widget_auth_token: string;
+} = {
+  server_url: "" || process.env.SERVER_URL!,
+  widget_id: process.env.MSG91_WIDGET_ID!,
+  widget_auth_token: process.env.MSG91_TOKEN_AUTH!
+}
 
 export interface DefaultChatT {
   id: string;
@@ -82,163 +92,32 @@ export const defaultStatus: DefaultStatusT[] = [
   },
 ];
 
-export const defaultChas: DefaultChatT[] = [];
-export const defaultChats: DefaultChatT[] = [
-  {
-    id: '123',
-    lastUpdatedAt: new Date(),
-    onPress: () => { },
-    profileName: 'Angel Curtis',
-    lastChat: 'Please help me find a good monitor for ten laks only.',
-    unviewedChats: 2,
-  },
-  {
-    id: '124',
-    lastUpdatedAt: new Date(),
-    onPress: () => { },
-    profileName: 'Sophia Lee',
-    lastChat: "Let's catch up tomorrow evening!",
-    unviewedChats: 0,
-  },
-  {
-    id: '125',
-    lastUpdatedAt: new Date(),
-    onPress: () => { },
-    profileName: 'Ethan Brown',
-    lastChat: "I've sent the documents you requested.",
-    unviewedChats: 5,
-  },
-  {
-    id: '126',
-    lastUpdatedAt: new Date(),
-    onPress: () => { },
-    profileName: 'Liam Johnson',
-    lastChat: 'Where should we meet for lunch?',
-    unviewedChats: 3,
-  },
-  {
-    id: '127',
-    lastUpdatedAt: new Date(),
-    onPress: () => { },
-    profileName: 'Olivia Martinez',
-    lastChat: 'The project deadline has been extended.',
-    unviewedChats: 0,
-  },
-  {
-    id: '128',
-    lastUpdatedAt: new Date(),
-    onPress: () => { },
-    profileName: 'Noah Davis',
-    lastChat: 'Can you review my code by tomorrow?',
-    unviewedChats: 4,
-  },
-  {
-    id: '129',
-    lastUpdatedAt: new Date(),
-    onPress: () => { },
-    profileName: 'Emma Wilson',
-    lastChat: 'Do you have the latest meeting notes?',
-    unviewedChats: 7,
-  },
-  {
-    id: '130',
-    lastUpdatedAt: new Date(),
-    onPress: () => { },
-    profileName: 'James Taylor',
-    lastChat: 'Thanks for the help, I owe you one!',
-    unviewedChats: 0,
-  },
-  {
-    id: '131',
-    lastUpdatedAt: new Date(),
-    onPress: () => { },
-    profileName: 'Mia Anderson',
-    lastChat: 'Can we reschedule our call for next week?',
-    unviewedChats: 2,
-  },
-  {
-    id: '132',
-    lastUpdatedAt: new Date(),
-    onPress: () => { },
-    profileName: 'Alexander White',
-    lastChat: 'I’ve booked the tickets for our trip!',
-    unviewedChats: 1,
-  },
-  {
-    id: '133',
-    lastUpdatedAt: new Date(),
-    onPress: () => { },
-    profileName: 'Charlotte Harris',
-    lastChat: 'Let me know when you’re free to discuss the report.',
-    unviewedChats: 6,
-  },
-  {
-    id: '134',
-    lastUpdatedAt: new Date(),
-    onPress: () => { },
-    profileName: 'Benjamin Clark',
-    lastChat: 'I’ll send over the final design tonight.',
-    unviewedChats: 0,
-  },
-  {
-    id: '135',
-    lastUpdatedAt: new Date(),
-    onPress: () => { },
-    profileName: 'Amelia Lewis',
-    lastChat: 'Looking forward to our meeting!',
-    unviewedChats: 3,
-  },
-  {
-    id: '136',
-    lastUpdatedAt: new Date(),
-    onPress: () => { },
-    profileName: 'Lucas Walker',
-    lastChat: 'The client has approved the proposal.',
-    unviewedChats: 5,
-  },
-  {
-    id: '137',
-    lastUpdatedAt: new Date(),
-    onPress: () => { },
-    profileName: 'Isabella Robinson',
-    lastChat: 'Let’s finalize the presentation today.',
-    unviewedChats: 8,
-  },
-  {
-    id: '138',
-    lastUpdatedAt: new Date(),
-    onPress: () => { },
-    profileName: 'Henry King',
-    lastChat: 'Just submitted the report. Check it out.',
-    unviewedChats: 4,
-  },
-];
 
 export const createChatTypes = [
   {
     title: 'New Chat',
     desc: 'Send a message to your contact',
     icon: 'chat-outline',
-    screen: 'Contact'
+    screen: 'Contact',
   },
   {
     title: 'New Contact',
     desc: 'Add a contact to be able to send messages',
     icon: 'contacts-outline',
-    screen: 'Contact'
+    screen: 'Contact',
   },
   {
     title: 'New Community',
     desc: 'Join the community around you',
     icon: 'account-multiple-outline',
-    screen: 'Contact'
+    screen: 'Contact',
   },
 ];
 
 
 export const reactIcons: string[] = [
-  '🔥', '😁', '🤣', '👌', '👍', '❤️'
-]
+  '🔥', '😁', '🤣', '👌', '👍', '❤️',
+];
 
 type SpecificChatReplyOptionsT = {
   optionName: string;
@@ -248,21 +127,21 @@ type SpecificChatReplyOptionsT = {
 export const specificChatReplyOptions: SpecificChatReplyOptionsT[] = [
   {
     optionName: 'Copy',
-    optionIcon: 'clipboard-outline'
+    optionIcon: 'clipboard-outline',
   },
   {
     optionName: 'Reply',
-    optionIcon: 'arrow-down-left'
+    optionIcon: 'arrow-down-left',
   },
   {
     optionName: 'Forward',
-    optionIcon: 'arrow-down-right'
+    optionIcon: 'arrow-down-right',
   },
   {
     optionName: 'Delete',
-    optionIcon: 'trash-can-outline'
-  }
-]
+    optionIcon: 'trash-can-outline',
+  },
+];
 
 type ProfileStatusListT = {
   backgroundImage: string;
@@ -274,21 +153,21 @@ export const profileStoryList: ProfileStatusListT[] = [
   {
     backgroundImage: 'https://picsum.photos/200/300?uid=1',
     label: 'Cakep banget ini taneman, cocok bgt',
-    id: (new mongoose.Types.ObjectId()).toString()
+    id: uuidv4(),
   },
   {
     backgroundImage: 'https://picsum.photos/200/300?uid=2',
     label: 'Kursi aja berdua, kamu masa sendiri',
-    id: (new mongoose.Types.ObjectId()).toString()
+    id: uuidv4(),
   },
   {
     backgroundImage: 'https://picsum.photos/200/300?uid=3',
     label: 'Ngopi dulul, lorem ipsum, sebelum',
-    id: (new mongoose.Types.ObjectId()).toString()
+    id: uuidv4(),
   },
   {
     backgroundImage: 'https://picsum.photos/200/300?uid=4',
     label: 'Cakep banget ini taneman, cocok bgt',
-    id: (new mongoose.Types.ObjectId()).toString()
-  }
-]
+    id: uuidv4(),
+  },
+];

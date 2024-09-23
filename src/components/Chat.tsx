@@ -3,7 +3,7 @@ import {DefaultChatT} from '../utils/constants';
 import {MD3Colors, Text} from 'react-native-paper';
 
 export default function ChatComponent(props: DefaultChatT): React.JSX.Element {
-  console.log(props)
+  console.log(props);
   return (
     <TouchableOpacity onPress={props.onPress}>
 
@@ -40,7 +40,7 @@ export default function ChatComponent(props: DefaultChatT): React.JSX.Element {
             width: '80%',
             borderBottomWidth: 0.2,
             borderBottomColor: MD3Colors.neutral70,
-            justifyContent: "space-between"
+            justifyContent: 'space-between',
           }}>
           <View
             style={{
@@ -62,8 +62,8 @@ export default function ChatComponent(props: DefaultChatT): React.JSX.Element {
             </Text>
           </View>
           <View style={{
-            flexDirection: "column",
-            justifyContent: "space-between"
+            flexDirection: 'column',
+            justifyContent: 'space-between',
           }}>
             <Text
               style={{
@@ -81,9 +81,9 @@ export default function ChatComponent(props: DefaultChatT): React.JSX.Element {
                 height: 15,
                 textAlign: 'center',
                 borderRadius: 50,
-                marginLeft: "auto",
+                marginLeft: 'auto',
                 marginRight: 5,
-                marginBottom: 10
+                marginBottom: 10,
               }}>
               1
             </Text>

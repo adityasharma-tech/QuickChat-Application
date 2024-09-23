@@ -1,12 +1,21 @@
-import { useUser } from '@realm/react';
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { io, Socket } from 'socket.io-client';
+import {useAuth, useUser} from '@realm/react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from 'react';
+import {io, Socket} from 'socket.io-client';
+import {retrieveUserSession} from '../../utils/userSessions';
+import { DefaultEventsMap } from '@socket.io/component-emitter';
+import { envs } from '../../utils/constants';
 
 interface SocketContextProps {
   socket: Socket | null;
 }
 
-const SocketContext = createContext<SocketContextProps>({ socket: null });
+const SocketContext = createContext<SocketContextProps>({socket: null});
 
 export const useSocket = () => useContext(SocketContext);
 
@@ -14,30 +23,42 @@ interface Props {
   children: ReactNode;
 }
 
-export const SocketProvider: React.FC<Props> = ({ children }) => {
+export const SocketProvider: React.FC<Props> = ({children}) => {
   const [socket, setSocket] = useState<Socket | null>(null);
+
+  const {logOut} = useAuth();
+
   const user = useUser();
 
-  useEffect(() => {
-    // Initialize the socket connection
-    const newSocket = io(`${process.env.SERVER_URL}/ws`, {
-      transports: ['websocket'],
-      auth: {
-        token: user.accessToken
-      }
-    });
+  const accessToken = React.useMemo(async () => {
+    const {token} = await retrieveUserSession(logOut);
+    return token;
+  }, [user.accessToken]);
 
-    setSocket(newSocket);
+  useEffect(() => {
+    let newSocket: Socket<DefaultEventsMap, DefaultEventsMap>|null = null;
+    accessToken.then(token => {
+      // Initialize the socket connection
+      newSocket = io(`${envs.server_url}/ws`, {
+        transports: ['websocket'],
+        auth: {
+          token: token,
+        },
+      });
+
+      console.log('Socket IO initialized: ', newSocket.active, accessToken);
+
+      setSocket(newSocket);
+    });
 
     // Clean up on unmount
     return () => {
-      newSocket.disconnect();
+      if(newSocket)
+      {newSocket.disconnect();}
     };
   }, []);
 
   return (
-    <SocketContext.Provider value={{ socket }}>
-      {children}
-    </SocketContext.Provider>
+    <SocketContext.Provider value={{socket}}>{children}</SocketContext.Provider>
   );
 };

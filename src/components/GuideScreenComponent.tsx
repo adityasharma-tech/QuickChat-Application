@@ -60,7 +60,7 @@ export default function GuideScreenComponent({
             }}
             numberOfLines={
               2
-            }>{`Share with anynone, anywhere.\nA home for all the groups in your life.`}</Text>
+            }>{'Share with anynone, anywhere.\nA home for all the groups in your life.'}</Text>
         </View>
         <View
           style={{
