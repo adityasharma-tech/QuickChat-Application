@@ -6,7 +6,7 @@ export const envs : {
     widget_id: string;
     widget_auth_token: string;
 } = {
-  server_url: "https://0d61-2409-40e4-5d-1b18-8de4-5476-c244-7e30.ngrok-free.app" || process.env.SERVER_URL!,
+  server_url: process.env.SERVER_URL!,
   widget_id: process.env.MSG91_WIDGET_ID!,
   widget_auth_token: process.env.MSG91_TOKEN_AUTH!
 }
