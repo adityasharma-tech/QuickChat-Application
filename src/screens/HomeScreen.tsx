@@ -169,7 +169,6 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
 
   const saveTokenToDb = React.useCallback(
     async (token: string) => {
-      console.log('Saving token to realm db.', token);
       try {
         const customUserDataCollection = user
           .mongoClient('mongodb-atlas')
@@ -196,7 +195,7 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
 
         await customUserDataCollection.updateOne(filter, updateDoc, options);
         const customData = await user.refreshCustomData();
-        console.log(customData);
+        console.log(`fcm_token`, customData.fcm_token);
       } catch (error: any) {
         throw new Error(error);
       }
@@ -233,8 +232,7 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
       };
 
       await customUserDataCollection.updateOne(filter, updateDoc, options);
-      const customData = await user.refreshCustomData();
-      console.log(customData);
+      await user.refreshCustomData();
     } catch (error: any) {
       throw new Error(error);
     }
@@ -252,7 +250,6 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
       realm.write(() => {
         realm.deleteAll(); // Delete all Realm data
       });
-      console.log('All Realm data has been deleted.');
     } catch (error) {
       console.error('Error while deleting Realm data:', error);
     }
@@ -263,7 +260,6 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
       if (user) {
         deleteAllRealmData();
         await logOut();
-        console.log('User logged out successfully.');
       }
     } catch (error) {
       console.error('Error logging out user:', error);
@@ -701,7 +697,7 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
       {chatLoading ? (
         <ChatSkeleton />
       ) : allConversations.length > 0 ? (
-        <ScrollView>
+        <React.Fragment>
           {/* Chat Section */}
           <View
             style={{
@@ -726,7 +722,6 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
                 Chats
               </Text>
               <IconButton
-                onPress={() => console.log('Searching....')}
                 size={30}
                 icon="dots-horizontal"
               />
@@ -762,12 +757,12 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
               />
             )}
           />
-        </ScrollView>
+        </React.Fragment>
       ) : null}
       <View
         style={{
           paddingHorizontal: 20,
-          paddingVertical: 15,
+          paddingVertical: 18,
           justifyContent:
             allConversations.length > 0 ? 'center' : 'space-around',
           flexDirection: 'row',

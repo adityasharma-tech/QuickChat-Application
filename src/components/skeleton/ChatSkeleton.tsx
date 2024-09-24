@@ -31,7 +31,6 @@ export default function ChatSkeleton({headerShown = true}: {
             Chats
           </Text>
           <IconButton
-            onPress={() => console.log('Searching....')}
             size={30}
             icon="dots-horizontal"
           />

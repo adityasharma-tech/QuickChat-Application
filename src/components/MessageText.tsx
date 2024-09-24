@@ -6,9 +6,11 @@ import { MD2Colors } from 'react-native-paper';
 export function MyMessageText({
   _id,
   messageText,
+  seen
 }: {
   _id: string;
   messageText: string;
+  seen: boolean
 }) {
   return (
     <View
@@ -25,6 +27,7 @@ export function MyMessageText({
           paddingHorizontal: 15,
           paddingVertical: 7,
           borderRadius: 10,
+          opacity: seen ? 1 : 0.5,
           backgroundColor: colors.primary,
         }}>
         {messageText}
@@ -35,7 +38,7 @@ export function MyMessageText({
 
 export function UserMessageText({
     _id,
-    messageText,
+    messageText
   }: {
     _id: string;
     messageText: string;

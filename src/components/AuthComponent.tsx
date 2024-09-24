@@ -88,7 +88,6 @@ export default function AuthComponent({
       };
 
       const result = await OTPWidget.sendOTP(data);
-      console.log('@handlePhoneInputContinue.result:', result);
 
       if (result.type == 'error' || result.error) {
         setLoading(false);
@@ -139,7 +138,6 @@ export default function AuthComponent({
       };
 
       const result = await OTPWidget.retryOTP(data);
-      console.log('@handleResendOtp.result:', result);
 
       if (result.type == 'error' || result.error) {
         setLoading(false);
@@ -189,7 +187,6 @@ export default function AuthComponent({
         'POST',
       );
       if (!response.success) {
-        console.log('Failed to verify otp: ', response);
         return;
       }
       const parsedPhoneNumber = parsePhoneNumber(phoneNumberText, 'IN');
@@ -198,7 +195,6 @@ export default function AuthComponent({
       await savePhoneNumber({
         phoneNumber: parsedPhoneNumber.number.replace('+', ''),
       });
-      console.log('response', response);
 
       storeUserSession(response.data.access_token, parsedPhoneNumber.number.replace('+', '')).then(()=>{
         logInWithJWT(response.data.access_token);
@@ -209,13 +205,11 @@ export default function AuthComponent({
           position: 'bottom',
         });
       });
-      console.log(authResult);
       Toast.show({
         type: 'success',
         text1: 'You are logined successfully',
         position: 'bottom',
       });
-      setLoading(false);
     } catch (error) {
       console.error(error);
       setLoading(false);

@@ -45,6 +45,7 @@ export default function ConversationItem({onPress, idx, _id, time, lastMessage, 
             style={{
               fontSize: 16,
               fontWeight: 'bold',
+              color: 'black'
             }}>
             {phoneNumber}
           </Text>

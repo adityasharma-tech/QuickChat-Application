@@ -81,3 +81,6 @@ yarn-error.log
 **/google-services.json
 *.config.json
 atlasConfig.json
+
+# Secret Files
+*.secret.tsx

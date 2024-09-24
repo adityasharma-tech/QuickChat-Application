@@ -30,7 +30,6 @@ export const savePhoneNumber = async (user: {
   try {
     const userData = JSON.stringify(user);
     await AsyncStorage.setItem('user', userData);
-    console.log('User data saved to Local Storage');
   } catch (error) {
     console.error('Error saving user data:', error);
   }
@@ -41,7 +40,6 @@ export const getPhoneNumber = async () => {
     const userData = await AsyncStorage.getItem('user');
     if (userData !== null) {
       const user = JSON.parse(userData);
-      console.log('User data retrieved:', user);
       return user;
     } else {
       console.log('No user data found');
@@ -55,7 +53,6 @@ export const getPhoneNumber = async () => {
 export const removePhoneNumber = async () => {
   try {
     await AsyncStorage.removeItem('user');
-    console.log('User data removed from Local Storage');
   } catch (error) {
     console.error('Error removing user data:', error);
   }

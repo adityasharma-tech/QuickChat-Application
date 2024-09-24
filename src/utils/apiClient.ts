@@ -14,7 +14,7 @@ apiClient.interceptors.request.use(
     try {
       await axios.get(envs.server_url!);
     } catch (error: any) {
-      console.log('Domain initialization failed:', error);
+      console.error('Domain initialization failed:', error);
     }
     return config;
   },
@@ -34,7 +34,6 @@ export const apiRequest = async (
       method: method.toUpperCase(),
       data: data,
     });
-    console.log(envs.server_url, url);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {

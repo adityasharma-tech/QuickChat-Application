@@ -46,7 +46,7 @@ export const SocketProvider: React.FC<Props> = ({children}) => {
         },
       });
 
-      console.log('Socket IO initialized: ', newSocket.active, accessToken);
+      console.log('Socket IO initialized: ', newSocket.active);
 
       setSocket(newSocket);
     });

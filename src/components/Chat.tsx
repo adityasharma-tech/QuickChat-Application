@@ -3,7 +3,6 @@ import {DefaultChatT} from '../utils/constants';
 import {MD3Colors, Text} from 'react-native-paper';
 
 export default function ChatComponent(props: DefaultChatT): React.JSX.Element {
-  console.log(props);
   return (
     <TouchableOpacity onPress={props.onPress}>
 

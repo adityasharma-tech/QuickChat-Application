@@ -11,7 +11,7 @@ import messaging, {
 } from '@react-native-firebase/messaging';
 import {RootStackParamList} from './utils/RootStackParamList.types';
 import {PermissionsAndroid} from 'react-native';
-import {v4 as uuidv4} from 'uuid';
+import uuid from 'react-native-uuid';
 
 // navigation
 import {
@@ -20,18 +20,18 @@ import {
 } from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
+// notification
+import notifee from '@notifee/react-native';
+
 // screens
 import HomeScreen from './screens/HomeScreen';
 import ContactScreen from './screens/ContactScreen';
 
 // hooks import
-import {useQuery, useRealm} from '@realm/react';
+import {useRealm} from '@realm/react';
 import ChatScreen from './screens/ChatScreen';
 import {useSocket} from './config/socket.io/socket';
-import {
-  ConversationSchema,
-  MessageSchema,
-} from './config/realm/schemas/ConversationSchema';
+import {ConversationSchema} from './config/realm/schemas/ConversationSchema';
 
 export default function App() {
   // hooks
@@ -48,10 +48,10 @@ export default function App() {
     (remoteMessage: FirebaseMessagingTypes.RemoteMessage | null) => {
       if (remoteMessage) {
         // @ts-ignore
-        const {phone_number, display_name} = remoteMessage.data;
+        const {_from, display_name} = remoteMessage.data;
 
         navigationRef.current?.navigate('Chat', {
-          phoneNumber: phone_number,
+          phoneNumber: _from,
           displayName: display_name,
         });
       }
@@ -73,20 +73,19 @@ export default function App() {
         message_mode,
         reply_id,
         message,
-        phone_number,
+        _from,
         caption,
       }: any = data;
       try {
-        const conversations = useQuery(ConversationSchema).filtered(
-          'phoneNumber == $0',
-          phone_number,
-        );
+        const conversations = realm
+          .objects(`Conversation`)
+          .filtered('phoneNumber == $0', _from);
 
         const conversation = conversations.length > 0 ? conversations[0] : null;
         realm.write(() => {
           const newMessage = realm.create('Message', {
-            _id: uuidv4(),
-            phoneNumber: phone_number,
+            _id: uuid.v4().toString(),
+            phoneNumber: _from,
             messageType: message_mode,
             replyId: reply_id,
             message,
@@ -95,23 +94,23 @@ export default function App() {
             timestamp: new Date(),
           });
           if (conversation) {
-            const messages = useQuery(MessageSchema).filtered(
-              '_id == $0',
-              message_id,
+            const oldConversation = realm.objectForPrimaryKey(
+              'Conversation',
+              conversation._id,
             );
+            const oldMessage = realm.objectForPrimaryKey(`Message`, message_id);
 
-            const oldMessage = messages.length > 0 ? messages[0] : null;
             if (oldMessage) {
               oldMessage.edited = true;
               oldMessage.message = message;
             } else {
               // @ts-ignore
-              conversation.messages.push(newMessage);
+              oldConversation.messages.push(newMessage);
             }
           } else {
             realm.create('Conversation', {
-              _id: uuidv4(),
-              phoneNumber: phone_number,
+              _id: uuid.v4().toString(),
+              phoneNumber: _from,
               messages: [newMessage],
             });
           }
@@ -120,7 +119,7 @@ export default function App() {
         console.error('Getting error during Saving RemoteMessage: ', error);
       }
     },
-    [useQuery, ConversationSchema, realm, uuidv4, Date],
+    [ConversationSchema, realm, uuid, Date],
   );
 
   // handling messages
@@ -155,6 +154,10 @@ export default function App() {
       };
     }
   }, [socket]);
+
+  React.useEffect(()=>{
+    notifee.cancelAllNotifications();
+  }, [])
 
   return (
     <NavigationContainer ref={navigationRef}>

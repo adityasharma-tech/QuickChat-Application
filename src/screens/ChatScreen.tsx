@@ -14,11 +14,7 @@ import {RootStackParamList} from '../utils/RootStackParamList.types';
 import {useQuery, useRealm, useUser} from '@realm/react';
 import {MyMessageText, UserMessageText} from '../components/MessageText';
 import {useSocket} from '../config/socket.io/socket';
-import {v4 as uuidv4} from 'uuid';
-import {
-  ConversationSchema,
-  MessageSchema,
-} from '../config/realm/schemas/ConversationSchema';
+import uuid from 'react-native-uuid';
 
 type ChatScreenProp = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 
@@ -27,9 +23,7 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
   const realm = useRealm();
   const {socket} = useSocket();
 
-  const scrollViewRef = useRef<ScrollView>(null);
-
-  const [recipientFcm, setRecipientFcm] = React.useState(null);
+  const scrollViewRef = useRef<FlatList>(null);
 
   const [message, setMessage] = React.useState('');
   const [messageList, updateMessageList] = React.useState<
@@ -62,69 +56,12 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
     if (!rUser) return;
     // @ts-ignore
     return rUser.fcm_token;
-  }, [user, route.params, recipientFcm]);
-
-  const onRemoteMessage = useCallback(
-    (data: any) => {
-      const {
-        message_id,
-        message_mode,
-        reply_id,
-        message,
-        phone_number,
-        caption,
-        seen
-      }: any = data;
-      try {
-        const conversations = useQuery(ConversationSchema).filtered(
-          `phoneNumber == $0`,
-          phone_number,
-        );
-        const conversation = conversations.length > 0 ? conversations[0] : null;
-        realm.write(() => {
-          const newMessage = realm.create('Message', {
-            _id: uuidv4(),
-            phoneNumber: phone_number,
-            messageType: message_mode,
-            replyId: reply_id,
-            message,
-            caption,
-            edited: false,
-            timestamp: new Date(),
-          });
-          if (conversation) {
-            const messages = useQuery(MessageSchema).filtered(
-              `_id == $0`,
-              message_id,
-            );
-            const oldMessage = messages.length > 0 ? messages[0] : null;
-            if (oldMessage) {
-              oldMessage.edited = true;
-              oldMessage.seen = seen ?? false;
-              oldMessage.message = message;
-            } else {
-              // @ts-ignore
-              conversation.messages.push(newMessage);
-            }
-          } else {
-            realm.create('Conversation', {
-              _id: uuidv4(),
-              phoneNumber: phone_number,
-              messages: [newMessage],
-            });
-          }
-        });
-      } catch (error) {
-        console.error('Getting error during Saving RemoteMessage: ', error);
-      }
-    },
-    [useQuery, ConversationSchema, realm, uuidv4, Date],
-  );
+  }, [user, route.params]);
 
   const updateListenerCallback = useCallback(() => {
     const currentConversation = realm
       .objects('Conversation')
-      .filtered('participants CONTAINS $0', route.params.phoneNumber);
+      .filtered('phoneNumber == $0', route.params.phoneNumber);
 
     if (currentConversation.length > 0) {
       // @ts-ignore
@@ -135,7 +72,7 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
   React.useEffect(() => {
     const conversation = realm
       .objects('Conversation')
-      .filtered('participants CONTAINS $0', route.params.phoneNumber);
+      .filtered('phoneNumber == $0', route.params.phoneNumber);
 
     if (conversation.length > 0) {
       // @ts-ignore
@@ -167,46 +104,128 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
   }, [BackHandler]);
 
   // New Version Started
+  const onRemoteMessage = useCallback(
+    (data: any, retrievePhoneNumber?: string) => {
+      const {
+        message_id,
+        message_mode,
+        reply_id,
+        message,
+        _from,
+        caption,
+        seen,
+      }: any = data;
+      try {
+        console.log('data recieved, seen: ', seen, data);
+        realm.write(() => {
+          const conversations = realm
+            .objects('Conversation')
+            .filtered(`phoneNumber == $0`, retrievePhoneNumber ?? _from);
+          const conversation =
+            conversations.length > 0 ? conversations[0] : null;
+          if (conversation) {
+            const oldConversation = realm.objectForPrimaryKey(
+              'Conversation',
+              conversation._id,
+            );
+            const oldMessage = realm.objectForPrimaryKey(`Message`, message_id);
+            console.log('oldMessage: ', oldMessage);
+
+            if (oldMessage) {
+              oldMessage.edited = seen ? false : true;
+              oldMessage.seen = seen ?? false;
+              oldMessage.message = message;
+            } else {
+              let newMessage = realm.create('Message', {
+                _id: message_id,
+                phoneNumber: _from,
+                messageType: message_mode,
+                replyId: reply_id.trim() == '' ? null : reply_id,
+                message,
+                caption,
+                edited: false,
+                timestamp: new Date(),
+              });
+              // @ts-ignore
+              oldConversation.messages.push(newMessage);
+            }
+          } else {
+            let newMessage = realm.create('Message', {
+              _id: message_id,
+              phoneNumber: _from,
+              messageType: message_mode,
+              replyId: reply_id.trim() == '' ? null : reply_id,
+              message,
+              caption,
+              edited: false,
+              timestamp: new Date(),
+            });
+            realm.create('Conversation', {
+              _id: message_id,
+              phoneNumber: retrievePhoneNumber,
+              messages: [newMessage],
+            });
+          }
+        });
+      } catch (error) {
+        console.error('Getting error during Saving RemoteMessage: ', error);
+      }
+    },
+    [realm, uuid, Date, route.params],
+  );
 
   const createMessage = useCallback(() => {
-    if (!socket) return console.error('Socket not found.');
-    socket.emit(
-      'message:create',
-      {
-        message_id: uuidv4(),
-        message_mode: 'text',
-        reply_id: '',
-        fcm_token: getUserFcm,
-        message,
-        caption: '',
-        metadata: {
-          avatar_url: `https://i.pravatar.cc/150?u=${user.customData.phoneNumber}`,
-          phone_number: user.customData.phoneNumber,
-          display_name: user.customData.phoneNumber,
+    if (!socket) {
+      console.error('Socket not found.');
+      return;
+    }
+    getUserFcm.then(fcm_token => {
+      const self_message_id = uuid.v4().toString();
+      socket.emit(
+        'message:create',
+        {
+          message_id: self_message_id,
+          message_mode: 'text',
+          reply_id: '',
+          fcm_token: fcm_token ?? '',
+          message,
+          caption: '',
+          metadata: {
+            avatar_url: `https://i.pravatar.cc/150?u=${user.customData.phoneNumber}`,
+            phone_number: route.params.phoneNumber,
+            display_name: user.customData.phoneNumber,
+          },
         },
-      },
-      (response: any) => {
-        console.log('Response from socket.io-message:create->', response);
-        onRemoteMessage({
-          message_id: uuidv4(),
+        (response: any) => {
+          console.log('Response from socket.io-message:create->', response);
+          if (response.success)
+            onRemoteMessage(
+              {
+                message_id: response.data.message_id,
+                message_mode: 'text',
+                reply_id: '',
+                message,
+                caption: '',
+                _from: user.customData.phoneNumber,
+                seen: true,
+              },
+              route.params.phoneNumber,
+            );
+        },
+      );
+      onRemoteMessage(
+        {
+          message_id: self_message_id,
           message_mode: 'text',
           reply_id: '',
           message,
           caption: '',
-          phone_number: user.customData.phoneNumber,
-          seen: true,
-        });
-      },
-    );
-    onRemoteMessage({
-      message_id: uuidv4(),
-      message_mode: 'text',
-      reply_id: '',
-      message,
-      caption: '',
-      phone_number: user.customData.phoneNumber,
+          _from: user.customData.phoneNumber,
+        },
+        route.params.phoneNumber,
+      );
     });
-  }, [socket, uuidv4, user, onRemoteMessage, getUserFcm]);
+  }, [socket, uuid, user, getUserFcm, onRemoteMessage, message, route.params]);
 
   return (
     <View
@@ -285,21 +304,20 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
           backgroundColor: 'white',
           flexGrow: 1,
         }}>
-        <ScrollView
-          onContentSizeChange={() =>
-            scrollViewRef.current?.scrollToEnd({animated: true})
-          }
-          scrollsToTop={false}
-          ref={scrollViewRef}
-          style={{
-            position: 'absolute',
-            bottom: 80,
-            top: 0,
-            left: 0,
-            right: 0,
-            paddingHorizontal: 10,
-          }}>
           <FlatList
+            onContentSizeChange={() =>
+              scrollViewRef.current?.scrollToEnd({animated: true})
+            }
+            style={{
+              position: 'absolute',
+              bottom: 80,
+              top: 0,
+              left: 0,
+              right: 0,
+              paddingHorizontal: 10,
+            }}
+            scrollsToTop={false}
+            ref={scrollViewRef}
             data={messageList}
             keyExtractor={item => item._id.toString()}
             renderItem={({item}) =>
@@ -308,6 +326,7 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
                   key={item._id.toString()}
                   _id={item._id.toString()}
                   messageText={item.message}
+                  seen={item.seen}
                 />
               ) : (
                 <UserMessageText
@@ -318,7 +337,6 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
               )
             }
           />
-        </ScrollView>
       </View>
       {/* Bottom Chat */}
       <View

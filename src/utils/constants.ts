@@ -1,12 +1,12 @@
 import { GestureResponderEvent } from 'react-native';
-import {v4 as uuidv4} from 'uuid';
+import uuid from 'react-native-uuid';
 
 export const envs : {
     server_url: string;
     widget_id: string;
     widget_auth_token: string;
 } = {
-  server_url: "" || process.env.SERVER_URL!,
+  server_url: "https://0d61-2409-40e4-5d-1b18-8de4-5476-c244-7e30.ngrok-free.app" || process.env.SERVER_URL!,
   widget_id: process.env.MSG91_WIDGET_ID!,
   widget_auth_token: process.env.MSG91_TOKEN_AUTH!
 }
@@ -153,21 +153,21 @@ export const profileStoryList: ProfileStatusListT[] = [
   {
     backgroundImage: 'https://picsum.photos/200/300?uid=1',
     label: 'Cakep banget ini taneman, cocok bgt',
-    id: uuidv4(),
+    id: uuid.v4().toString(),
   },
   {
     backgroundImage: 'https://picsum.photos/200/300?uid=2',
     label: 'Kursi aja berdua, kamu masa sendiri',
-    id: uuidv4(),
+    id: uuid.v4().toString(),
   },
   {
     backgroundImage: 'https://picsum.photos/200/300?uid=3',
     label: 'Ngopi dulul, lorem ipsum, sebelum',
-    id: uuidv4(),
+    id: uuid.v4().toString(),
   },
   {
     backgroundImage: 'https://picsum.photos/200/300?uid=4',
     label: 'Cakep banget ini taneman, cocok bgt',
-    id: uuidv4(),
+    id: uuid.v4().toString(),
   },
 ];

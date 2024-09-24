@@ -4,7 +4,6 @@ import {
   FlatList,
   Image,
   PermissionsAndroid,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -126,7 +125,7 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
         setAllContacts(contacts);
       })
       .catch(e => {
-        console.log(e);
+        console.error(e);
       })
       .finally(() => setLoading(false));
   }, [Contacts, parsePhoneNumber, allContacts, setAllContacts, setLoading]);
@@ -324,7 +323,7 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
       {loading ? (
         <ChatSkeleton headerShown={false} />
       ) : allContacts.length > 0 ? (
-        <ScrollView>
+        <React.Fragment>
           {/* Contact Section */}
           {searchQuery.length <= 0 ? (
             <FlatList
@@ -466,7 +465,7 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
               )}
             />
           )}
-        </ScrollView>
+        </React.Fragment>
       ) : null}
     </View>
   );

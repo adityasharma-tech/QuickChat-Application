@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
 import Realm from 'realm';
 
 export class MessageSchema extends Realm.Object<MessageSchema> {
@@ -30,8 +29,9 @@ export class MessageSchema extends Realm.Object<MessageSchema> {
 
 export class ConversationSchema extends Realm.Object<ConversationSchema> {
   _id!: string;
-  participants!: string[];
+  phoneNumber!: string;
   messages!: Realm.List<MessageSchema>;
+  displayName!: string;
 
   static schema = {
     name: 'Conversation',
@@ -39,6 +39,7 @@ export class ConversationSchema extends Realm.Object<ConversationSchema> {
     properties: {
       _id: 'string',
       phoneNumber: 'string',
+      displayName: { type: 'string', default: 'Unknown'},
       messages: { type: 'list', objectType: 'Message' },
     },
   };
