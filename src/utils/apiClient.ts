@@ -1,6 +1,7 @@
 // api.js
-import axios from 'axios';
+import axios, { AxiosHeaders } from 'axios';
 import { envs } from './constants';
+import { retrieveUserSession } from './userSessions';
 
 const apiClient = axios.create({
   baseURL: `${envs.server_url}/api/v1`,
@@ -26,13 +27,31 @@ apiClient.interceptors.request.use(
 export const apiRequest = async (
   url: string,
   data: any = null,
-  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'PATCH'
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'PATCH',
+  headers: any = {},
+  options: {
+    secure: boolean
+  } = {
+    secure: false
+  }
 ) => {
+  const { secure } = options;
   try {
+    let token = null;
+    if (secure) {
+      const userdata = await retrieveUserSession();
+      token = userdata.token;
+    }
+
     const response = await apiClient({
       url: url,
       method: method.toUpperCase(),
       data: data,
+      headers: {
+        ...headers,
+        Authorization: token ? `Bearer ${token}` : undefined,
+        'Content-Type': headers['Content-Type'] || 'application/json',
+      }
     });
     return response.data;
   } catch (error) {

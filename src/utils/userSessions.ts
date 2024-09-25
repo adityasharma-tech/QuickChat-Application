@@ -11,6 +11,7 @@ async function storeUserSession(ACCESS_TOKEN: string, PHONE_NUMBER: string) {
         );
     } catch (error) {
         console.error('@tokenFunctions[storeUserSession]:', error);
+        return null;
     }
 }
 
@@ -19,20 +20,22 @@ async function removeUserSession() {
         await EncryptedStorage.removeItem('user_session');
     } catch (error) {
         console.error('@tokenFunctions[removeUserSession]:', error);
+        return null;
     }
 }
 
-async function retrieveUserSession(logOut: Function) {
+async function retrieveUserSession(logOut?: Function) {
     try {
         const session = await EncryptedStorage.getItem('user_session');
 
         if (session !== null) {
             return JSON.parse(session);
         } else {
-            await logOut();
+            if(logOut) await logOut();
         }
     } catch (error) {
         console.error('@tokenFunctions[retriveUserSession]:', error);
+        return null;
     }
 }
 

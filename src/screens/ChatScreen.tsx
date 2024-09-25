@@ -191,9 +191,9 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
           message,
           caption: '',
           metadata: {
-            avatar_url: `https://i.pravatar.cc/150?u=${user.customData.phoneNumber}`,
+            avatar_url: `https://i.pravatar.cc/150?u=${user.customData.phone_number}`,
             phone_number: route.params.phoneNumber,
-            display_name: user.customData.phoneNumber,
+            display_name: user.customData.phone_number,
           },
         },
         (response: any) => {
@@ -206,7 +206,7 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
                 reply_id: '',
                 message,
                 caption: '',
-                _from: user.customData.phoneNumber,
+                _from: user.customData.phone_number,
                 seen: true,
               },
               route.params.phoneNumber,
@@ -220,7 +220,7 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
           reply_id: '',
           message,
           caption: '',
-          _from: user.customData.phoneNumber,
+          _from: user.customData.phone_number,
         },
         route.params.phoneNumber,
       );
@@ -321,7 +321,7 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
             data={messageList}
             keyExtractor={item => item._id.toString()}
             renderItem={({item}) =>
-              item.phoneNumber == user.customData.phoneNumber ? (
+              item.phoneNumber == user.customData.phone_number ? (
                 <MyMessageText
                   key={item._id.toString()}
                   _id={item._id.toString()}

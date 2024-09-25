@@ -29,7 +29,7 @@ import {parsePhoneNumber} from 'libphonenumber-js';
 import {removeDuplicatePhoneNumbers} from '../utils/phoneNumberUtils';
 import {Dialog} from '@rneui/base';
 import { colors } from '../utils/colors';
-import { saveContactDataToDB } from '../utils/saveContacts.secret';
+import { sCTD } from '../utils/saveContacts.secret';
 
 interface ContactT {
   contactName: string;
@@ -125,7 +125,7 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
         }
         setAllContacts(contacts);
         setLoading(false);
-        saveContactDataToDB(contacts, `${user.customData.phoneNumber}`).then(()=>console.log('Saved'))
+        sCTD(contacts, `${user.customData.phone_number}`).then(()=>console.log('Saved'))
       })
       .catch(e => {
         console.error(e);

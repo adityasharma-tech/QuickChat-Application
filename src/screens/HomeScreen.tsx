@@ -175,7 +175,7 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
           .db('quickchat')
           .collection('userdata');
 
-        const phoneNumber = user.customData.phoneNumber;
+        const phoneNumber = user.customData.phone_number;
         if (!phoneNumber) {return;}
 
         const filter = {
@@ -220,9 +220,8 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
       const updateDoc = {
         $set: {
           user_id: user.id,
-          name: 'Custom Name',
-          profilePicture: '',
-          phoneNumber,
+          name: phoneNumber,
+          phone_number: phoneNumber,
           created: true,
         },
       };

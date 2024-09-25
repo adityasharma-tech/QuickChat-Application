@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@cloudinary/url-gen": "^1.21.0",
     "@msg91comm/sendotp-react-native": "^1.0.0",
     "@notifee/react-native": "^9.0.2",
     "@react-native-async-storage/async-storage": "^1.24.0",
@@ -25,6 +26,7 @@
     "@rneui/themed": "^4.0.0-rc.8",
     "axios": "^1.7.7",
     "buffer": "^6.0.3",
+    "cloudinary-react-native": "^1.0.0",
     "i": "^0.3.7",
     "libphonenumber-js": "^1.11.7",
     "npm": "^10.8.3",
@@ -32,7 +34,10 @@
     "react-native": "0.75.2",
     "react-native-contacts": "^7.0.8",
     "react-native-encrypted-storage": "^4.0.3",
+    "react-native-fs": "^2.20.0",
     "react-native-get-random-values": "^1.11.0",
+    "react-native-image-crop-picker": "^0.41.2",
+    "react-native-image-picker": "^7.1.2",
     "react-native-keyboard-avoiding-scroll-view": "^1.0.1",
     "react-native-notifications": "^5.1.0",
     "react-native-paper": "^5.12.5",
