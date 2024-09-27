@@ -31,7 +31,7 @@ import StatusSkeleton from '../components/skeleton/StatusSkeleton';
 import {BlurView} from '@react-native-community/blur';
 
 // hook importsd
-import {useAuth, useRealm, useUser} from '@realm/react';
+import {useAuth, useQuery, useRealm, useUser} from '@realm/react';
 
 // firebase
 import messaging from '@react-native-firebase/messaging';
@@ -40,11 +40,16 @@ import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import ConversationItem from '../components/ConversationItem';
 import ProfilePopup from '../components/ProfilePopup';
 import {usePopup} from '../config/custom-providers/ProfileProvider';
+import {getLastUpdateTime, setLastUpdateTime} from '../utils/storage';
+import {fetchConversationsInChunks} from '../utils/apiClient';
+import {ConversationSchema} from '../config/realm/schemas/ConversationSchema';
 
 // types
 interface ConversationT {
   _id: string;
   phoneNumber: string;
+  profilePicture: string;
+  displayName: string;
   messages: {
     _id: string;
     phoneNumber: string;
@@ -74,10 +79,15 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
 
   const {showPopup} = usePopup();
 
-  // use state hooks
-  const [allConversations, setAllConversations] = React.useState<
-    ConversationT[]
-  >([]);
+  const allConversations = useQuery({
+    type: ConversationSchema,
+    keyPaths: ['messages'],
+  });
+
+  React.useEffect(() => {
+    console.log('Updating data');
+    (async () => await updateConversationData())();
+  }, [allConversations]);
 
   const [userDataUpdating, isUserDataUpdating] = React.useState<boolean>(true);
 
@@ -176,7 +186,9 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
           .collection('userdata');
 
         const phoneNumber = user.customData.phone_number;
-        if (!phoneNumber) {return;}
+        if (!phoneNumber) {
+          return;
+        }
 
         const filter = {
           user_id: user.id,
@@ -211,7 +223,9 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
         .collection('userdata');
 
       const {phoneNumber} = await getPhoneNumber();
-      if (!phoneNumber) {logOut();}
+      if (!phoneNumber) {
+        logOut();
+      }
 
       const filter = {
         user_id: user.id,
@@ -236,13 +250,6 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
       throw new Error(error);
     }
   }, [user, getPhoneNumber, logOut]);
-
-  const updateConversationListListener = useCallback(() => {
-    const conversationCollection = realm.objects('Conversation');
-
-    // @ts-ignore
-    setAllConversations([...conversationCollection]);
-  }, []);
 
   const deleteAllRealmData = useCallback(() => {
     try {
@@ -296,20 +303,32 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
     })();
   }, [writeCustomUserData, isUserDataUpdating]);
 
-  React.useEffect(() => {
-    const conversationCollection = realm.objects('Conversation');
+  const updateConversationData = useCallback(async () => {
+    console.log('updatingConversationData');
+    const lastUpdateTime = await getLastUpdateTime();
+    var conversationCollection = realm.objects('Conversation');
+    const phoneNumbers = conversationCollection.map(conversation => ({
+      phoneNumber: conversation.phoneNumber,
+      conversationId: conversation._id,
+    }));
 
     // @ts-ignore
-    setAllConversations([...conversationCollection]);
-
-    // Listener for any changes
-    conversationCollection.addListener(updateConversationListListener);
-
-    // Clean up the listener when the component unmounts
-    return () => {
-      conversationCollection.removeListener(updateConversationListListener);
-    };
-  }, [realm]);
+    const updatedConversations = await fetchConversationsInChunks(phoneNumbers);
+    console.log('updatedData:', ':', updatedConversations, ';');
+    realm.write(() => {
+      updatedConversations.forEach(element => {
+        const cn = realm.objectForPrimaryKey(
+          'Conversation',
+          element.conversationId,
+        );
+        if (cn) {
+          (cn.profilePicture = element.avatar_url),
+            (cn.displayName = element.name);
+        }
+      });
+    });
+    console.log(allConversations);
+  }, [realm, fetchConversationsInChunks, Date]);
 
   return (
     <View
@@ -720,10 +739,7 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
                 }}>
                 Chats
               </Text>
-              <IconButton
-                size={30}
-                icon="dots-horizontal"
-              />
+              <IconButton size={30} icon="dots-horizontal" />
             </View>
           </View>
           <FlatList
@@ -731,10 +747,13 @@ export default function ViewScreen({navigation}: HomeScreenProps) {
             keyExtractor={item => item._id.toString()}
             renderItem={({item, index}) => (
               <ConversationItem
+                profileName={item.displayName}
+                profilePhoto={item.profilePicture}
                 onPress={() =>
                   navigation.navigate('Chat', {
-                    displayName: item.phoneNumber,
+                    displayName: item.displayName,
                     phoneNumber: item.phoneNumber,
+                    profilePhoto: item.profilePicture,
                     _id: item._id.toString(),
                   })
                 }

@@ -6,11 +6,13 @@ import { MD2Colors } from 'react-native-paper';
 export function MyMessageText({
   _id,
   messageText,
-  seen
+  seen,
+  failed
 }: {
   _id: string;
   messageText: string;
-  seen: boolean
+  seen: boolean,
+  failed: boolean
 }) {
   return (
     <View
@@ -22,13 +24,13 @@ export function MyMessageText({
       }}>
       <Text
         style={{
-          color: '#000',
+          color: failed ? '#fff' :'#000',
           fontSize: 16,
           paddingHorizontal: 15,
           paddingVertical: 7,
           borderRadius: 10,
-          opacity: seen ? 1 : 0.5,
-          backgroundColor: colors.primary,
+          opacity: failed ? 0.7 : seen ? 1 : 0.5,
+          backgroundColor: failed ? '#C41E3A' :colors.primary,
         }}>
         {messageText}
       </Text>

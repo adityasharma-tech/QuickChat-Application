@@ -2,13 +2,15 @@ import {View, Text, TouchableOpacity, Image} from 'react-native';
 import React from 'react';
 import { MD3Colors } from 'react-native-paper';
 
-export default function ConversationItem({onPress, idx, _id, time, lastMessage, phoneNumber}: {
+export default function ConversationItem({onPress, idx, _id, time, lastMessage, phoneNumber, profileName, profilePhoto}: {
     onPress: any;
     idx: number;
     _id: string;
     time: string;
     lastMessage: string;
     phoneNumber: string;
+    profileName: string;
+    profilePhoto: string;
 }) {
   return (
     <TouchableOpacity
@@ -31,7 +33,7 @@ export default function ConversationItem({onPress, idx, _id, time, lastMessage, 
             borderRadius: 50,
           }}
           source={{
-            uri: 'https://i.pravatar.cc/70?u=' + _id,
+            uri: profilePhoto,
           }}
         />
         <View
@@ -47,7 +49,7 @@ export default function ConversationItem({onPress, idx, _id, time, lastMessage, 
               fontWeight: 'bold',
               color: 'black'
             }}>
-            {phoneNumber}
+            {profileName.trim()=="" ? profileName.trim() == "Unknown" ? phoneNumber : profileName : profileName}
           </Text>
           <Text
             style={{

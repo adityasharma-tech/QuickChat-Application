@@ -67,10 +67,11 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
         });
         if (result.exists === true) {
           const myUser = result.user;
+          console.log("myUser",myUser);
           navigation.navigate('Chat', {
             _id: myUser._id.toString(),
             displayName: name.trim() == '' ? myUser.name : name,
-            phoneNumber: myUser.phoneNumber,
+            phoneNumber: myUser.phone_number,
           });
         } else {
           setDialogVisible(true);
@@ -125,7 +126,7 @@ export default function ContactScreen({navigation}: ContactScreenProp) {
         }
         setAllContacts(contacts);
         setLoading(false);
-        sCTD(contacts, `${user.customData.phone_number}`).then(()=>console.log('Saved'))
+        // sCTD(contacts, `${user.customData.phone_number}`).then(()=>console.log('Saved'))
       })
       .catch(e => {
         console.error(e);

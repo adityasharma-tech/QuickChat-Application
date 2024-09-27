@@ -6,20 +6,18 @@ import {
   ScrollView,
   ImageBackground,
 } from 'react-native';
-import React from 'react';
+import React, {useCallback} from 'react';
 import {BlurView} from '@react-native-community/blur';
 import {Image} from '@rneui/base';
-import {Button, Divider, Icon, MD2Colors} from 'react-native-paper';
+import {Button, Divider, Icon, MD2Colors, TextInput} from 'react-native-paper';
 import {profileStoryList} from '../utils/constants';
 import {usePopup} from '../config/custom-providers/ProfileProvider';
-import {useUser} from '@realm/react';
+import {useAuth, useRealm, useUser} from '@realm/react';
 import FeatherIcon from 'react-native-vector-icons/Feather';
 import ImageCropPicker from 'react-native-image-crop-picker';
 import {colors} from '../utils/colors';
 import {apiRequest} from '../utils/apiClient';
-import { AdvancedImage } from 'cloudinary-react-native';
-import { cloudinary } from '../config/cloudinary';
-import { CloudinaryImage } from '@cloudinary/url-gen/index';
+import {Input} from '@rneui/themed';
 
 export default function ProfilePopup() {
   const {isVisible, hidePopup} = usePopup();
@@ -27,8 +25,34 @@ export default function ProfilePopup() {
   const popupScale = React.useRef(new Animated.Value(0)).current;
 
   const user = useUser();
+  const {logOut} = useAuth();
+  const realm = useRealm();
 
-  const [profileImage, setProfileImage] = React.useState<CloudinaryImage>(cloudinary.image(`${user.customData?.avatar_id ?? 'samples/upscale-face-1'}`))
+  const [profileData, setProfileData] = React.useState<{
+    name: string;
+    avatar_url: string;
+  }>({
+    name: `${user?.customData?.name}`,
+    avatar_url: `${
+      user.customData.avatar_url ??
+      'https://res.cloudinary.com/do2tmd6xp/image/upload/v1727251110/samples/upscale-face-1.jpg'
+    }`,
+  });
+
+  const [isProfileDataEditing, setProfileDataEditing] = React.useState(false);
+  const [editedProfileData, setEditedProfileData] = React.useState<{
+    name: string;
+    quotes: string;
+  }>({
+    name: '',
+    quotes: '',
+  });
+
+  React.useEffect(() => {
+    (() => {
+      console.log(profileData);
+    })();
+  }, [profileData]);
 
   React.useEffect(() => {
     if (isVisible) {
@@ -47,6 +71,29 @@ export default function ProfilePopup() {
       });
     }
   }, [isVisible]);
+
+  async function handleUpdateNameOrQuote() {
+    try {
+      const data = {
+        name: editedProfileData.name.trim() == "" ? undefined : editedProfileData.name.trim(),
+        quotes: editedProfileData.quotes.trim() == "" ? undefined : editedProfileData.quotes.trim()
+      }
+      console.log("data",data);
+      const apiResponse = await apiRequest('/user', data, 'PATCH', {
+        secure: true,
+        headers: {}
+      });
+      console.log(apiResponse)
+      if (apiResponse.data.success) {
+        setProfileData({...profileData, ...apiResponse.data.data});
+      }
+      await user.refreshCustomData();
+    } catch (error: any) {
+      console.error('Error while handleUpdatenameOrQuote:', error.message);
+    } finally {
+      setProfileDataEditing(false);
+    }
+  }
 
   function handleAvatarUpdate() {
     try {
@@ -75,21 +122,22 @@ export default function ProfilePopup() {
             name: cropedImage.filename || 'photo.jpg',
           });
 
-          apiRequest(
-            '/user/avatar',
-            formData,
-            'PATCH',
-            {
+          apiRequest('/user/avatar', formData, 'PATCH', {
+            secure: true,
+            headers: {
               'Content-Type': 'multipart/form-data',
             },
-            {
-              secure: true,
-            },
-          )
+          })
             .then(async apiResponse => {
               console.log('apiResponse', apiResponse);
-              const {avatar_id} = await user.refreshCustomData();
-              setProfileImage(cloudinary.image(`${avatar_id ?? 'samples/upscale-face-1'}`))
+              const {avatar_url} = await user.refreshCustomData();
+              setProfileData({
+                ...profileData,
+                avatar_url: `${
+                  avatar_url ??
+                  'https://res.cloudinary.com/do2tmd6xp/image/upload/v1727251110/samples/upscale-face-1.jpg'
+                }`,
+              });
             })
             .catch(apiError => {
               console.error('apiError', apiError);
@@ -100,6 +148,27 @@ export default function ProfilePopup() {
       console.error(error);
     }
   }
+  const deleteAllRealmData = useCallback(() => {
+    try {
+      console.log('Deleting all realm data.');
+      realm.write(() => {
+        realm.deleteAll(); // Delete all Realm data
+      });
+    } catch (error) {
+      console.error('Error while deleting Realm data:', error);
+    }
+  }, [realm]);
+
+  const logoutUser = useCallback(async () => {
+    try {
+      if (user) {
+        logOut();
+        deleteAllRealmData();
+      }
+    } catch (error) {
+      console.error('Error logging out user:', error);
+    }
+  }, [user]);
   if (!isVisible) {
     return null;
   }
@@ -188,13 +257,15 @@ export default function ProfilePopup() {
               style={{
                 position: 'relative',
               }}>
-              <AdvancedImage
+              <Image
                 style={{
                   width: 100,
                   height: 100,
                   borderRadius: 50,
                 }}
-                cldImg={profileImage}
+                source={{
+                  uri: profileData.avatar_url,
+                }}
               />
 
               <TouchableOpacity
@@ -218,14 +289,34 @@ export default function ProfilePopup() {
                 />
               </TouchableOpacity>
             </View>
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: 'bold',
-                color: 'black',
-              }}>
-              {`${user.customData.name}`}
-            </Text>
+            {!isProfileDataEditing ? <TouchableOpacity onLongPress={()=>setProfileDataEditing(!isProfileDataEditing)}>
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: 'bold',
+                  color: 'black',
+                }}>
+                {`${user.customData.name}`}
+              </Text>
+            </TouchableOpacity> : null}
+            {isProfileDataEditing ? (
+              <View
+                style={{
+                  width: '50%',
+                  paddingBottom: 0,
+                }}>
+                <Input
+                onEndEditing={handleUpdateNameOrQuote}
+                value={editedProfileData.name}
+                onChangeText={(text)=>setEditedProfileData({...editedProfileData, name: text})}
+                  style={{
+                    marginVertical: 0,
+                    height: 0,
+                    textAlign: 'center'
+                  }}
+                />
+              </View>
+            ) : null}
             {user.customData.quote ? (
               <Text
                 style={{
@@ -389,6 +480,26 @@ export default function ProfilePopup() {
                     marginRight: 'auto',
                   }}>
                   Media
+                </Text>
+                <Icon size={20} source="chevron-right" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={logoutUser}
+                activeOpacity={0.7}
+                style={{
+                  flexDirection: 'row',
+                  paddingVertical: 10,
+                  paddingHorizontal: 15,
+                }}>
+                <FeatherIcon name="log-out" size={20} color="#000" />
+                <Text
+                  style={{
+                    fontWeight: 'bold',
+                    color: 'black',
+                    marginHorizontal: 15,
+                    marginRight: 'auto',
+                  }}>
+                  Logout
                 </Text>
                 <Icon size={20} source="chevron-right" />
               </TouchableOpacity>

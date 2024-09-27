@@ -24,18 +24,21 @@ apiClient.interceptors.request.use(
   }
 );
 
+
+
 export const apiRequest = async (
   url: string,
   data: any = null,
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'PATCH',
-  headers: any = {},
   options: {
-    secure: boolean
+    secure?: boolean,
+    headers?: any
   } = {
-    secure: false
+    secure: false,
+    headers: {}
   }
 ) => {
-  const { secure } = options;
+  const { secure, headers } = options;
   try {
     let token = null;
     if (secure) {
@@ -50,7 +53,7 @@ export const apiRequest = async (
       headers: {
         ...headers,
         Authorization: token ? `Bearer ${token}` : undefined,
-        'Content-Type': headers['Content-Type'] || 'application/json',
+        'Content-Type': headers['Content-Type'] ?? 'application/json',
       }
     });
     return response.data;
@@ -66,4 +69,27 @@ export const apiRequest = async (
     }
     return null;
   }
+};
+
+export const fetchConversationsInChunks = async (conversations: { conversationId: string, phoneNumber: string }[]) => {
+  const chunkSize = 30;
+  const chunks = [];
+  for (let i = 0; i < conversations.length; i += chunkSize) {
+    chunks.push(conversations.slice(i, i + chunkSize));
+  }
+
+  const results = [];
+  for (const chunk of chunks) {
+    try {
+      const response = await apiRequest('/conversation/batch', { conversations: chunk }, 'POST', { secure: true, headers: {} });
+      if (response.success) {
+        results.push(...response.data);
+      } else {
+        throw new Error('Failed to fetch conversation data');
+      }
+    } catch (error) {
+      console.error('Error fetching conversation data:', error);
+    }
+  }
+  return results;
 };

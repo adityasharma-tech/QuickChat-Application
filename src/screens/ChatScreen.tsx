@@ -43,7 +43,6 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
       timestamp: Date;
     }[]
   >([]);
-  const [loading, setLoading] = React.useState(false);
 
   const getUserFcm = useMemo(async () => {
     const userCollection = user
@@ -51,7 +50,7 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
       .db('quickchat')
       .collection('userdata');
     const rUser = await userCollection.findOne({
-      phoneNumber: route.params.phoneNumber,
+      phone_number: route.params.phoneNumber,
     });
     if (!rUser) return;
     // @ts-ignore
@@ -114,7 +113,9 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
         _from,
         caption,
         seen,
+        failed,
       }: any = data;
+      console.log('failed', failed);
       try {
         console.log('data recieved, seen: ', seen, data);
         realm.write(() => {
@@ -134,6 +135,7 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
             if (oldMessage) {
               oldMessage.edited = seen ? false : true;
               oldMessage.seen = seen ?? false;
+              if (failed) oldMessage.failed = failed ?? false;
               oldMessage.message = message;
             } else {
               let newMessage = realm.create('Message', {
@@ -179,8 +181,8 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
       console.error('Socket not found.');
       return;
     }
+    const self_message_id = uuid.v4().toString();
     getUserFcm.then(fcm_token => {
-      const self_message_id = uuid.v4().toString();
       socket.emit(
         'message:create',
         {
@@ -191,17 +193,29 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
           message,
           caption: '',
           metadata: {
-            avatar_url: `https://i.pravatar.cc/150?u=${user.customData.phone_number}`,
+            avatar_url: route.params.profilePhoto || 'https://res.cloudinary.com/do2tmd6xp/image/upload/v1727251110/samples/upscale-face-1.jpg',
             phone_number: route.params.phoneNumber,
-            display_name: user.customData.phone_number,
+            display_name: user.customData.name,
           },
         },
         (response: any) => {
           console.log('Response from socket.io-message:create->', response);
-          if (response.success)
+          if (!response.success) {
+            onRemoteMessage({
+              message_id: self_message_id,
+              message_mode: 'text',
+              reply_id: '',
+              message,
+              caption: '',
+              _from: user.customData.phone_number,
+              seen: false,
+              failed: true
+            }, route.params.phoneNumber)
+          }
+          if (response.success) {
             onRemoteMessage(
               {
-                message_id: response.data.message_id,
+                message_id: self_message_id,
                 message_mode: 'text',
                 reply_id: '',
                 message,
@@ -211,6 +225,8 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
               },
               route.params.phoneNumber,
             );
+          }
+          
         },
       );
       onRemoteMessage(
@@ -263,9 +279,7 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
               marginVertical: 'auto',
             }}
             source={{
-              uri: `https://i.pravatar.cc/50?u=${
-                route.params._id ?? route.params.displayName
-              }`,
+              uri: route.params.profilePhoto,
             }}
           />
           <View
@@ -304,39 +318,40 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
           backgroundColor: 'white',
           flexGrow: 1,
         }}>
-          <FlatList
-            onContentSizeChange={() =>
-              scrollViewRef.current?.scrollToEnd({animated: true})
-            }
-            style={{
-              position: 'absolute',
-              bottom: 80,
-              top: 0,
-              left: 0,
-              right: 0,
-              paddingHorizontal: 10,
-            }}
-            scrollsToTop={false}
-            ref={scrollViewRef}
-            data={messageList}
-            keyExtractor={item => item._id.toString()}
-            renderItem={({item}) =>
-              item.phoneNumber == user.customData.phone_number ? (
-                <MyMessageText
-                  key={item._id.toString()}
-                  _id={item._id.toString()}
-                  messageText={item.message}
-                  seen={item.seen}
-                />
-              ) : (
-                <UserMessageText
-                  key={item._id.toString()}
-                  _id={item._id.toString()}
-                  messageText={item.message}
-                />
-              )
-            }
-          />
+        <FlatList
+          onContentSizeChange={() =>
+            scrollViewRef.current?.scrollToEnd({animated: true})
+          }
+          style={{
+            position: 'absolute',
+            bottom: 80,
+            top: 0,
+            left: 0,
+            right: 0,
+            paddingHorizontal: 10,
+          }}
+          scrollsToTop={false}
+          ref={scrollViewRef}
+          data={messageList}
+          keyExtractor={item => item._id.toString()}
+          renderItem={({item}) =>
+            item.phoneNumber == user.customData.phone_number ? (
+              <MyMessageText
+                key={item._id.toString()}
+                _id={item._id.toString()}
+                messageText={item.message}
+                seen={item.seen}
+                failed={item.failed}
+              />
+            ) : (
+              <UserMessageText
+                key={item._id.toString()}
+                _id={item._id.toString()}
+                messageText={item.message}
+              />
+            )
+          }
+        />
       </View>
       {/* Bottom Chat */}
       <View
@@ -388,7 +403,6 @@ export default function ChatScreen({route, navigation}: ChatScreenProp) {
           />
         </View>
         <IconButton
-          loading={loading}
           onPress={createMessage}
           size={30}
           icon={message.length <= 0 ? 'microphone-outline' : 'send'}
