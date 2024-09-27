@@ -32,6 +32,7 @@ import {useRealm} from '@realm/react';
 import ChatScreen from './screens/ChatScreen';
 import {useSocket} from './config/socket.io/socket';
 import {ConversationSchema} from './config/realm/schemas/ConversationSchema';
+import StoryScreen from './screens/StoryScreen';
 
 export default function App() {
   // hooks
@@ -162,11 +163,11 @@ export default function App() {
   return (
     <NavigationContainer ref={navigationRef}>
       <RootStack.Navigator
-        initialRouteName="Home"
         screenOptions={{
           headerShown: false,
         }}>
         <React.Fragment>
+          <RootStack.Screen name="Story" component={StoryScreen} />
           <RootStack.Screen name="Home" component={HomeScreen} />
           <RootStack.Screen name="Contact" component={ContactScreen} />
           <RootStack.Screen name="Chat" component={ChatScreen} />

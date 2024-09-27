@@ -22,6 +22,7 @@ import {store} from './config/redux/store';
 import {appId, baseUrl} from './config/atlas.config.json';
 import {PopupProvider} from './config/custom-providers/ProfileProvider';
 import {SocketProvider} from './config/socket.io/socket';
+import Toast from 'react-native-toast-message';
 
 export default function AppWrapper() {
   React.useEffect(() => {
@@ -51,6 +52,7 @@ export default function AppWrapper() {
                 <SocketProvider>
                   <PopupProvider>
                     <App />
+                    <Toast position='top' bottomOffset={100} topOffset={100} visibilityTime={2000} />
                   </PopupProvider>
                 </SocketProvider>
               </PaperProvider>
